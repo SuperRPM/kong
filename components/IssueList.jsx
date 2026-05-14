@@ -15,15 +15,20 @@ export default function IssueList({ projectId, projectPrefix, initialIssues, mem
   const router = useRouter()
   const [issues, setIssues] = useState(initialIssues)
   const [activeCategory, setActiveCategory] = useState('전체')
+  const [filterStatus, setFilterStatus] = useState('')
+  const [filterAssignee, setFilterAssignee] = useState('')
 
   const categories = useMemo(() => {
     const cats = [...new Set(issues.map(i => i.category).filter(Boolean))].sort()
     return ['전체', ...cats]
   }, [issues])
 
-  const filtered = activeCategory === '전체'
-    ? issues
-    : issues.filter(i => i.category === activeCategory)
+  const filtered = useMemo(() => {
+    let list = activeCategory === '전체' ? issues : issues.filter(i => i.category === activeCategory)
+    if (filterStatus) list = list.filter(i => i.status === filterStatus)
+    if (filterAssignee) list = list.filter(i => i.assignee_id === filterAssignee)
+    return list
+  }, [issues, activeCategory, filterStatus, filterAssignee])
 
   async function handleStatusChange(issue, newStatus) {
     const supabase = createClient()
@@ -37,6 +42,8 @@ export default function IssueList({ projectId, projectPrefix, initialIssues, mem
       .single()
     if (data) setIssues(prev => prev.map(i => i.id === data.id ? data : i))
   }
+
+  const selectCls = 'text-sm bg-white border border-[#dcdee0] rounded-lg px-3 py-1.5 text-[#60646c] focus:outline-none focus:ring-1 focus:ring-[#171717]'
 
   return (
     <>
@@ -58,8 +65,20 @@ export default function IssueList({ projectId, projectPrefix, initialIssues, mem
         </div>
       )}
 
-      <div className="flex items-center justify-between mb-4">
-        <span className="text-sm text-[#999999]">{filtered.length}개의 이슈</span>
+      <div className="flex items-center justify-between gap-3 mb-4 flex-wrap">
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-sm text-[#999999]">{filtered.length}개</span>
+          <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)} className={selectCls}>
+            <option value="">전체 상태</option>
+            {STATUS_OPTIONS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+          </select>
+          {members.length > 0 && (
+            <select value={filterAssignee} onChange={e => setFilterAssignee(e.target.value)} className={selectCls}>
+              <option value="">전체 담당자</option>
+              {members.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
+            </select>
+          )}
+        </div>
         <Link
           href={`/projects/${projectId}/issues/new`}
           className="bg-[#000000] hover:bg-[#1a1a1a] text-white text-sm font-medium px-[18px] py-[10px] rounded-lg transition-colors"
