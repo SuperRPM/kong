@@ -4,9 +4,15 @@ import { useState, useMemo } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { StatusBadge, PriorityBadge, STATUS_OPTIONS, PRIORITY_OPTIONS } from './StatusBadge'
 
+const CATEGORY_OPTIONS = [
+  { value: 'SL', label: 'SL — 세일즈' },
+  { value: 'CS', label: 'CS — CS팀' },
+  { value: 'CM', label: 'CM — 공통' },
+]
+
 const EMPTY_FORM = {
   title: '', description: '', status: 'todo', priority: 'medium',
-  assignee_id: '', category: '', planned_at: '', completed_at: ''
+  assignee_id: '', category: 'SL', planned_at: '', completed_at: ''
 }
 
 const inputCls = 'w-full bg-white border border-[#dcdee0] rounded-lg px-4 py-2.5 text-sm text-[#171717] focus:outline-none focus:ring-2 focus:ring-[#171717] placeholder:text-[#999999]'
@@ -44,7 +50,7 @@ export default function IssueList({ projectId, projectPrefix, initialIssues, mem
       status: issue.status,
       priority: issue.priority,
       assignee_id: issue.assignee_id ?? '',
-      category: issue.category ?? '',
+      category: issue.category ?? 'SL',
       planned_at: issue.planned_at ?? '',
       completed_at: issue.completed_at ?? '',
     })
@@ -62,7 +68,7 @@ export default function IssueList({ projectId, projectPrefix, initialIssues, mem
       status: form.status,
       priority: form.priority,
       assignee_id: form.assignee_id || null,
-      category: form.category.trim().toUpperCase() || null,
+      category: form.category || null,
       planned_at: form.planned_at || null,
       completed_at: form.completed_at || null,
     }
@@ -199,20 +205,10 @@ export default function IssueList({ projectId, projectPrefix, initialIssues, mem
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className={labelCls}>카테고리</label>
-                  <input
-                    type="text"
-                    value={form.category}
-                    onChange={e => setForm(f => ({ ...f, category: e.target.value.toUpperCase() }))}
-                    placeholder="SL, CS, CM..."
-                    list="category-suggestions"
-                    className={inputCls}
-                  />
-                  <datalist id="category-suggestions">
-                    <option value="SL" />
-                    <option value="CS" />
-                    <option value="CM" />
-                  </datalist>
-                  {form.category && <p className="text-xs text-[#999999] mt-1 font-mono">{projectPrefix}-{form.category}-###</p>}
+                  <select value={form.category} onChange={e => setForm(f => ({ ...f, category: e.target.value }))} className={selectCls}>
+                    {CATEGORY_OPTIONS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+                  </select>
+                  <p className="text-xs text-[#999999] mt-1 font-mono">{projectPrefix}-{form.category}-###</p>
                 </div>
                 <div>
                   <label className={labelCls}>제목 *</label>
