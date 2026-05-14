@@ -64,7 +64,7 @@ export default function IssueDetailClient({ issue, members, projectId }) {
 
   async function handleDelete() {
     const supabase = createClient()
-    const { error } = await supabase.from('issues').delete().eq('id', issue.id)
+    const { error } = await supabase.from('issues').update({ deleted_at: new Date().toISOString() }).eq('id', issue.id)
     if (!error) router.push(`/projects/${projectId}`)
   }
 
@@ -208,7 +208,7 @@ export default function IssueDetailClient({ issue, members, projectId }) {
           <div className="bg-white border border-[#dcdee0] rounded-xl shadow-lg p-6 w-full max-w-sm mx-4">
             <h2 className="text-base font-semibold text-[#171717] mb-2">이슈 삭제</h2>
             <p className="text-sm text-[#60646c] mb-5">
-              <span className="font-medium text-[#171717]">{issue.title}</span>을(를) 삭제할까요? 되돌릴 수 없습니다.
+              <span className="font-medium text-[#171717]">{issue.title}</span>을(를) 휴지통으로 이동합니다. 30일 이내 복구 가능합니다.
             </p>
             <div className="flex justify-end gap-2">
               <button onClick={() => setDeleteConfirm(false)} className="text-sm font-medium text-[#60646c] hover:text-[#171717] px-4 py-2 transition-colors">취소</button>

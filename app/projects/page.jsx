@@ -11,13 +11,14 @@ export default async function ProjectsPage() {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('name')
+    .select('name, is_admin')
     .eq('id', user.id)
     .single()
 
   const { data: projects } = await supabase
     .from('projects')
     .select('id, name, description, created_at')
+    .is('deleted_at', null)
     .order('created_at', { ascending: false })
 
   return (

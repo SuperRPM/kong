@@ -24,6 +24,11 @@ export default function Navbar({ user }) {
       <Link href="/projects" className="text-sm font-medium text-[#60646c] hover:text-[#171717] transition-colors">
         프로젝트
       </Link>
+      {user?.is_admin && (
+        <Link href="/trash" className="text-sm font-medium text-[#60646c] hover:text-[#171717] transition-colors">
+          휴지통
+        </Link>
+      )}
       <div className="ml-auto flex items-center gap-4">
         <span className="text-sm text-[#999999]">{user?.name}</span>
         <button
