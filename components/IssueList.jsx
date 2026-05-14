@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useMemo } from 'react'
+import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { StatusBadge, PriorityBadge, STATUS_OPTIONS } from './StatusBadge'
@@ -11,6 +12,7 @@ function issueId(prefix, category, number) {
 }
 
 export default function IssueList({ projectId, projectPrefix, initialIssues, members }) {
+  const router = useRouter()
   const [issues, setIssues] = useState(initialIssues)
   const [activeCategory, setActiveCategory] = useState('전체')
 
@@ -83,16 +85,17 @@ export default function IssueList({ projectId, projectPrefix, initialIssues, mem
           </div>
           <div className="divide-y divide-[#f0f0f3]">
             {filtered.map(issue => (
-              <div key={issue.id} className="flex items-center px-4 py-3 hover:bg-[#fafafa] gap-3 transition-colors">
+              <div
+                key={issue.id}
+                onClick={() => router.push(`/projects/${projectId}/issues/${issue.id}`)}
+                className="flex items-center px-4 py-3 hover:bg-[#fafafa] gap-3 transition-colors cursor-pointer"
+              >
                 <span className="w-28 shrink-0 font-mono text-xs text-[#60646c]">
                   {issueId(projectPrefix, issue.category, issue.number) ?? <span className="text-[#cccccc]">-</span>}
                 </span>
-                <Link
-                  href={`/projects/${projectId}/issues/${issue.id}`}
-                  className="flex-1 min-w-0 text-sm text-[#171717] hover:text-[#0d74ce] text-left truncate transition-colors"
-                >
+                <span className="flex-1 min-w-0 text-sm text-[#171717] truncate">
                   {issue.title}
-                </Link>
+                </span>
                 <div className="w-20 shrink-0"><StatusBadge status={issue.status} /></div>
                 <div className="w-14 shrink-0"><PriorityBadge priority={issue.priority} /></div>
                 <span className="w-20 shrink-0 text-xs text-[#60646c] truncate">{issue.assignee?.name ?? '-'}</span>
@@ -101,7 +104,8 @@ export default function IssueList({ projectId, projectPrefix, initialIssues, mem
                 <span className="w-24 shrink-0 text-xs text-[#60646c]">{issue.completed_at ?? '-'}</span>
                 <select
                   value={issue.status}
-                  onChange={e => handleStatusChange(issue, e.target.value)}
+                  onClick={e => e.stopPropagation()}
+                  onChange={e => { e.stopPropagation(); handleStatusChange(issue, e.target.value) }}
                   className="w-28 shrink-0 text-xs bg-white border border-[#dcdee0] rounded px-2 py-1 text-[#60646c] focus:outline-none focus:ring-1 focus:ring-[#171717]"
                 >
                   {STATUS_OPTIONS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
