@@ -17,6 +17,7 @@ export default function IssueList({ projectId, projectPrefix, initialIssues, mem
   const [activeCategory, setActiveCategory] = useState('전체')
   const [filterStatus, setFilterStatus] = useState('')
   const [filterAssignee, setFilterAssignee] = useState('')
+  const [searchQuery, setSearchQuery] = useState('')
 
   const categories = useMemo(() => {
     const cats = [...new Set(issues.map(i => i.category).filter(Boolean))].sort()
@@ -27,8 +28,15 @@ export default function IssueList({ projectId, projectPrefix, initialIssues, mem
     let list = activeCategory === '전체' ? issues : issues.filter(i => i.category === activeCategory)
     if (filterStatus) list = list.filter(i => i.status === filterStatus)
     if (filterAssignee) list = list.filter(i => i.assignee_id === filterAssignee)
+    if (searchQuery.trim()) {
+      const q = searchQuery.trim().toLowerCase()
+      list = list.filter(i => {
+        const id = issueId(projectPrefix, i.category, i.number) ?? ''
+        return i.title.toLowerCase().includes(q) || id.toLowerCase().includes(q)
+      })
+    }
     return list
-  }, [issues, activeCategory, filterStatus, filterAssignee])
+  }, [issues, activeCategory, filterStatus, filterAssignee, searchQuery, projectPrefix])
 
   async function handleStatusChange(issue, newStatus) {
     const supabase = createClient()
@@ -66,8 +74,14 @@ export default function IssueList({ projectId, projectPrefix, initialIssues, mem
       )}
 
       <div className="flex items-center justify-between gap-3 mb-4 flex-wrap">
-        <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-sm text-[#999999]">{filtered.length}개</span>
+        <div className="flex items-center gap-2 flex-wrap flex-1 min-w-0">
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+            placeholder="제목 / ID 검색..."
+            className="text-sm bg-white border border-[#dcdee0] rounded-lg px-3 py-1.5 text-[#171717] placeholder:text-[#cccccc] focus:outline-none focus:ring-1 focus:ring-[#171717] w-44"
+          />
           <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)} className={selectCls}>
             <option value="">전체 상태</option>
             {STATUS_OPTIONS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
@@ -78,20 +92,23 @@ export default function IssueList({ projectId, projectPrefix, initialIssues, mem
               {members.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
             </select>
           )}
+          <span className="text-sm text-[#999999]">{filtered.length}개</span>
         </div>
         <Link
           href={`/projects/${projectId}/issues/new`}
-          className="bg-[#000000] hover:bg-[#1a1a1a] text-white text-sm font-medium px-[18px] py-[10px] rounded-lg transition-colors"
+          className="bg-[#000000] hover:bg-[#1a1a1a] text-white text-sm font-medium px-[18px] py-[10px] rounded-lg transition-colors shrink-0"
         >
           + 새 이슈
         </Link>
       </div>
 
       {filtered.length === 0 ? (
-        <div className="text-center py-20 text-[#999999] text-sm">이슈가 없습니다.</div>
+        <div className="text-center py-20 text-[#999999] text-sm">
+          {searchQuery ? `“${searchQuery}” 검색 결과가 없습니다.` : '이슈가 없습니다.'}
+        </div>
       ) : (
         <>
-          {/* 데스크탑 테이블 */}
+          {/* 데스크톱 테이블 */}
           <div className="hidden md:block bg-white border border-[#dcdee0] rounded-xl overflow-hidden">
             <div className="flex items-center px-4 py-2 bg-[#fafafa] border-b border-[#f0f0f3] gap-3">
               <span className="w-28 shrink-0 text-[11px] font-semibold uppercase tracking-[0.88px] text-[#999999]">ID</span>
