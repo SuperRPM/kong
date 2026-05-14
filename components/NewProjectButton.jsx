@@ -11,6 +11,7 @@ export default function NewProjectButton() {
   const router = useRouter()
   const [open, setOpen] = useState(false)
   const [name, setName] = useState('')
+  const [prefix, setPrefix] = useState('REQ')
   const [description, setDescription] = useState('')
   const [loading, setLoading] = useState(false)
 
@@ -22,13 +23,19 @@ export default function NewProjectButton() {
     const { data: { user } } = await supabase.auth.getUser()
     const { data, error } = await supabase
       .from('projects')
-      .insert({ name: name.trim(), description: description.trim() || null, created_by: user.id })
+      .insert({
+        name: name.trim(),
+        prefix: prefix.trim().toUpperCase() || 'REQ',
+        description: description.trim() || null,
+        created_by: user.id,
+      })
       .select('id')
       .single()
     setLoading(false)
     if (!error && data) {
       setOpen(false)
       setName('')
+      setPrefix('REQ')
       setDescription('')
       router.push(`/projects/${data.id}`)
       router.refresh()
@@ -50,7 +57,7 @@ export default function NewProjectButton() {
             <h2 className="text-lg font-semibold text-[#171717] mb-5">새 프로젝트</h2>
             <form onSubmit={handleCreate} className="space-y-4">
               <div>
-                <label className={labelCls}>이름 *</label>
+                <label className={labelCls}>프로젝트명 *</label>
                 <input
                   type="text"
                   value={name}
@@ -60,6 +67,18 @@ export default function NewProjectButton() {
                   autoFocus
                   className={inputCls}
                 />
+              </div>
+              <div>
+                <label className={labelCls}>이슈 ID 접두사 (Prefix)</label>
+                <input
+                  type="text"
+                  value={prefix}
+                  onChange={e => setPrefix(e.target.value.toUpperCase())}
+                  placeholder="REQ"
+                  maxLength={10}
+                  className={inputCls}
+                />
+                <p className="text-xs text-[#999999] mt-1">이슈 ID 예시: <span className="font-mono">{(prefix||'REQ')}-SL-001</span></p>
               </div>
               <div>
                 <label className={labelCls}>설명</label>
