@@ -1,8 +1,8 @@
 import { createClient } from '@/lib/supabase/server'
 import { notFound, redirect } from 'next/navigation'
 import Navbar from '@/components/Navbar'
-import IssueList from '@/components/IssueList'
 import ProjectActions from '@/components/ProjectActions'
+import ProjectViewClient from '@/components/ProjectViewClient'
 
 export default async function ProjectPage({ params }) {
   const { id } = await params
@@ -42,7 +42,7 @@ export default async function ProjectPage({ params }) {
           </div>
           <ProjectActions projectId={id} projectName={project.name} />
         </div>
-        <IssueList
+        <ProjectViewClient
           projectId={id}
           projectPrefix={project.prefix ?? 'REQ'}
           initialIssues={issues ?? []}
