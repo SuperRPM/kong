@@ -41,12 +41,12 @@ export default function IssueList({ projectId, projectPrefix, initialIssues, mem
   return (
     <>
       {categories.length > 1 && (
-        <div className="flex items-center gap-1 mb-4 border-b border-[#f0f0f3]">
+        <div className="flex items-center gap-1 mb-4 border-b border-[#f0f0f3] overflow-x-auto">
           {categories.map(cat => (
             <button
               key={cat}
               onClick={() => setActiveCategory(cat)}
-              className={`px-4 py-2 text-sm font-medium transition-colors border-b-2 -mb-px ${
+              className={`px-4 py-2 text-sm font-medium transition-colors border-b-2 -mb-px whitespace-nowrap ${
                 activeCategory === cat
                   ? 'border-[#171717] text-[#171717]'
                   : 'border-transparent text-[#60646c] hover:text-[#171717]'
@@ -71,49 +71,92 @@ export default function IssueList({ projectId, projectPrefix, initialIssues, mem
       {filtered.length === 0 ? (
         <div className="text-center py-20 text-[#999999] text-sm">이슈가 없습니다.</div>
       ) : (
-        <div className="bg-white border border-[#dcdee0] rounded-xl overflow-hidden">
-          <div className="flex items-center px-4 py-2 bg-[#fafafa] border-b border-[#f0f0f3] gap-3">
-            <span className="w-28 shrink-0 text-[11px] font-semibold uppercase tracking-[0.88px] text-[#999999]">ID</span>
-            <span className="flex-1 text-[11px] font-semibold uppercase tracking-[0.88px] text-[#999999]">제목</span>
-            <span className="w-20 text-[11px] font-semibold uppercase tracking-[0.88px] text-[#999999]">상태</span>
-            <span className="w-14 text-[11px] font-semibold uppercase tracking-[0.88px] text-[#999999]">우선</span>
-            <span className="w-20 text-[11px] font-semibold uppercase tracking-[0.88px] text-[#999999]">담당자</span>
-            <span className="w-20 text-[11px] font-semibold uppercase tracking-[0.88px] text-[#999999]">요청자</span>
-            <span className="w-24 text-[11px] font-semibold uppercase tracking-[0.88px] text-[#999999]">계획완료일</span>
-            <span className="w-24 text-[11px] font-semibold uppercase tracking-[0.88px] text-[#999999]">완료일</span>
-            <span className="w-28 text-[11px] font-semibold uppercase tracking-[0.88px] text-[#999999]">상태변경</span>
-          </div>
-          <div className="divide-y divide-[#f0f0f3]">
-            {filtered.map(issue => (
-              <div
-                key={issue.id}
-                onClick={() => router.push(`/projects/${projectId}/issues/${issue.id}`)}
-                className="flex items-center px-4 py-3 hover:bg-[#fafafa] gap-3 transition-colors cursor-pointer"
-              >
-                <span className="w-28 shrink-0 font-mono text-xs text-[#60646c]">
-                  {issueId(projectPrefix, issue.category, issue.number) ?? <span className="text-[#cccccc]">-</span>}
-                </span>
-                <span className="flex-1 min-w-0 text-sm text-[#171717] truncate">
-                  {issue.title}
-                </span>
-                <div className="w-20 shrink-0"><StatusBadge status={issue.status} /></div>
-                <div className="w-14 shrink-0"><PriorityBadge priority={issue.priority} /></div>
-                <span className="w-20 shrink-0 text-xs text-[#60646c] truncate">{issue.assignee?.name ?? '-'}</span>
-                <span className="w-20 shrink-0 text-xs text-[#60646c] truncate">{issue.requester?.name ?? '-'}</span>
-                <span className="w-24 shrink-0 text-xs text-[#60646c]">{issue.planned_at ?? '-'}</span>
-                <span className="w-24 shrink-0 text-xs text-[#60646c]">{issue.completed_at ?? '-'}</span>
-                <select
-                  value={issue.status}
-                  onClick={e => e.stopPropagation()}
-                  onChange={e => { e.stopPropagation(); handleStatusChange(issue, e.target.value) }}
-                  className="w-28 shrink-0 text-xs bg-white border border-[#dcdee0] rounded px-2 py-1 text-[#60646c] focus:outline-none focus:ring-1 focus:ring-[#171717]"
+        <>
+          {/* 데스크탑 테이블 */}
+          <div className="hidden md:block bg-white border border-[#dcdee0] rounded-xl overflow-hidden">
+            <div className="flex items-center px-4 py-2 bg-[#fafafa] border-b border-[#f0f0f3] gap-3">
+              <span className="w-28 shrink-0 text-[11px] font-semibold uppercase tracking-[0.88px] text-[#999999]">ID</span>
+              <span className="flex-1 text-[11px] font-semibold uppercase tracking-[0.88px] text-[#999999]">제목</span>
+              <span className="w-20 text-[11px] font-semibold uppercase tracking-[0.88px] text-[#999999]">상태</span>
+              <span className="w-14 text-[11px] font-semibold uppercase tracking-[0.88px] text-[#999999]">우선</span>
+              <span className="w-20 text-[11px] font-semibold uppercase tracking-[0.88px] text-[#999999]">담당자</span>
+              <span className="w-20 text-[11px] font-semibold uppercase tracking-[0.88px] text-[#999999]">요청자</span>
+              <span className="w-24 text-[11px] font-semibold uppercase tracking-[0.88px] text-[#999999]">계획완료일</span>
+              <span className="w-24 text-[11px] font-semibold uppercase tracking-[0.88px] text-[#999999]">완료일</span>
+              <span className="w-28 text-[11px] font-semibold uppercase tracking-[0.88px] text-[#999999]">상태변경</span>
+            </div>
+            <div className="divide-y divide-[#f0f0f3]">
+              {filtered.map(issue => (
+                <div
+                  key={issue.id}
+                  onClick={() => router.push(`/projects/${projectId}/issues/${issue.id}`)}
+                  className="flex items-center px-4 py-3 hover:bg-[#fafafa] gap-3 transition-colors cursor-pointer"
                 >
-                  {STATUS_OPTIONS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
-                </select>
-              </div>
-            ))}
+                  <span className="w-28 shrink-0 font-mono text-xs text-[#60646c]">
+                    {issueId(projectPrefix, issue.category, issue.number) ?? <span className="text-[#cccccc]">-</span>}
+                  </span>
+                  <span className="flex-1 min-w-0 text-sm text-[#171717] truncate">{issue.title}</span>
+                  <div className="w-20 shrink-0"><StatusBadge status={issue.status} /></div>
+                  <div className="w-14 shrink-0"><PriorityBadge priority={issue.priority} /></div>
+                  <span className="w-20 shrink-0 text-xs text-[#60646c] truncate">{issue.assignee?.name ?? '-'}</span>
+                  <span className="w-20 shrink-0 text-xs text-[#60646c] truncate">{issue.requester?.name ?? '-'}</span>
+                  <span className="w-24 shrink-0 text-xs text-[#60646c]">{issue.planned_at ?? '-'}</span>
+                  <span className="w-24 shrink-0 text-xs text-[#60646c]">{issue.completed_at ?? '-'}</span>
+                  <select
+                    value={issue.status}
+                    onClick={e => e.stopPropagation()}
+                    onChange={e => { e.stopPropagation(); handleStatusChange(issue, e.target.value) }}
+                    className="w-28 shrink-0 text-xs bg-white border border-[#dcdee0] rounded px-2 py-1 text-[#60646c] focus:outline-none focus:ring-1 focus:ring-[#171717]"
+                  >
+                    {STATUS_OPTIONS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+                  </select>
+                </div>
+              ))}
+            </div>
           </div>
-        </div>
+
+          {/* 모바일 카드 */}
+          <div className="md:hidden bg-white border border-[#dcdee0] rounded-xl overflow-hidden">
+            <div className="divide-y divide-[#f0f0f3]">
+              {filtered.map(issue => {
+                const id = issueId(projectPrefix, issue.category, issue.number)
+                return (
+                  <div
+                    key={issue.id}
+                    onClick={() => router.push(`/projects/${projectId}/issues/${issue.id}`)}
+                    className="p-4 cursor-pointer active:bg-[#fafafa]"
+                  >
+                    <div className="flex items-start justify-between gap-2 mb-2">
+                      <div className="min-w-0 flex-1">
+                        {id && <span className="font-mono text-xs text-[#999999] block mb-0.5">{id}</span>}
+                        <p className="text-sm font-medium text-[#171717] leading-snug">{issue.title}</p>
+                      </div>
+                      <PriorityBadge priority={issue.priority} />
+                    </div>
+                    <div className="flex items-center gap-2 flex-wrap mb-3">
+                      <StatusBadge status={issue.status} />
+                      {issue.assignee?.name && (
+                        <span className="text-xs text-[#60646c]">· {issue.assignee.name}</span>
+                      )}
+                      {issue.planned_at && (
+                        <span className="text-xs text-[#999999]">· {issue.planned_at}</span>
+                      )}
+                    </div>
+                    <div onClick={e => e.stopPropagation()}>
+                      <select
+                        value={issue.status}
+                        onChange={e => { e.stopPropagation(); handleStatusChange(issue, e.target.value) }}
+                        className="text-xs bg-white border border-[#dcdee0] rounded-lg px-3 py-1.5 text-[#60646c] focus:outline-none"
+                      >
+                        {STATUS_OPTIONS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+                      </select>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        </>
       )}
     </>
   )
