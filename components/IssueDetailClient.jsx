@@ -26,6 +26,26 @@ function formatDate(ts) {
   return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
 }
 
+function describeActivity(log) {
+  const actor = log.actor?.name ?? '알 수 없음'
+  const statusLabel = v => STATUS_OPTIONS.find(o => o.value === v)?.label ?? v ?? '-'
+  const priorityLabel = v => PRIORITY_OPTIONS.find(o => o.value === v)?.label ?? v ?? '-'
+  switch (log.action) {
+    case 'status_changed':
+      return `${actor}이(가) 상태를 “${statusLabel(log.old_value)}” → “${statusLabel(log.new_value)}”로 변경`
+    case 'priority_changed':
+      return `${actor}이(가) 우선순위를 “${priorityLabel(log.old_value)}” → “${priorityLabel(log.new_value)}”로 변경`
+    case 'assignee_changed':
+      return `${actor}이(가) 담당자를 “${log.old_value ?? '미지정'}” → “${log.new_value ?? '미지정'}”로 변경`
+    case 'title_changed':
+      return `${actor}이(가) 제목을 “${log.new_value}”로 변경`
+    case 'category_changed':
+      return `${actor}이(가) 카테고리를 “${log.old_value}” → “${log.new_value}”로 변경`
+    default:
+      return `${actor}이(가) 이슈를 수정`
+  }
+}
+
 function CommentsSection({ issueId, initialComments, currentUserId }) {
   const [comments, setComments] = useState(initialComments)
   const [body, setBody] = useState('')
@@ -111,7 +131,24 @@ function CommentsSection({ issueId, initialComments, currentUserId }) {
   )
 }
 
-export default function IssueDetailClient({ issue, members, projectId, initialComments, currentUserId }) {
+function ActivityLog({ logs }) {
+  if (!logs || logs.length === 0) return null
+  return (
+    <div className="mt-6 bg-white border border-[#dcdee0] rounded-xl p-6">
+      <h2 className="text-sm font-semibold text-[#171717] mb-4">활동 이력</h2>
+      <div className="space-y-2.5">
+        {logs.map(log => (
+          <div key={log.id} className="flex items-start gap-3 text-xs">
+            <span className="text-[#aaaaaa] shrink-0 tabular-nums mt-0.5">{formatDate(log.created_at)}</span>
+            <span className="text-[#60646c]">{describeActivity(log)}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+export default function IssueDetailClient({ issue, members, projectId, initialComments, currentUserId, activityLogs }) {
   const router = useRouter()
   const [editing, setEditing] = useState(false)
   const [deleteConfirm, setDeleteConfirm] = useState(false)
@@ -248,6 +285,8 @@ export default function IssueDetailClient({ issue, members, projectId, initialCo
         initialComments={initialComments}
         currentUserId={currentUserId}
       />
+
+      <ActivityLog logs={activityLogs} />
 
       {editing && (
         <div className="fixed inset-0 bg-black/20 flex items-center justify-center z-50">
