@@ -15,18 +15,18 @@ export default function Navbar({ user }) {
   }
 
   return (
-    <header className="h-14 bg-slate-900 border-b border-slate-700 flex items-center px-6 gap-4">
-      <Link href="/projects" className="text-base font-bold text-blue-400 mr-4">
+    <header className="h-16 bg-white border-b border-[#f0f0f3] flex items-center px-6 gap-6">
+      <Link href="/projects" className="text-base font-semibold text-[#171717] mr-2">
         Kong
       </Link>
-      <Link href="/projects" className="text-sm text-slate-400 hover:text-slate-100 transition-colors">
+      <Link href="/projects" className="text-sm font-medium text-[#60646c] hover:text-[#171717] transition-colors">
         프로젝트
       </Link>
-      <div className="ml-auto flex items-center gap-3">
-        <span className="text-sm text-slate-500">{user?.name}</span>
+      <div className="ml-auto flex items-center gap-4">
+        <span className="text-sm text-[#999999]">{user?.name}</span>
         <button
           onClick={handleLogout}
-          className="text-sm text-slate-400 hover:text-slate-100 transition-colors"
+          className="text-sm font-medium text-[#60646c] hover:text-[#171717] transition-colors"
         >
           로그아웃
         </button>

@@ -24,13 +24,13 @@ export default async function ProjectPage({ params }) {
   if (!project) notFound()
 
   return (
-    <div className="min-h-screen bg-slate-900">
+    <div className="min-h-screen bg-white">
       <Navbar user={profile} />
       <main className="max-w-5xl mx-auto px-6 py-8">
         <div className="mb-6">
-          <h1 className="text-xl font-bold text-slate-100">{project.name}</h1>
+          <h1 className="text-xl font-semibold text-[#171717]">{project.name}</h1>
           {project.description && (
-            <p className="text-sm text-slate-400 mt-1">{project.description}</p>
+            <p className="text-sm text-[#60646c] mt-1">{project.description}</p>
           )}
         </div>
         <IssueList

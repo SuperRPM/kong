@@ -1,32 +1,26 @@
 const STATUS = {
-  todo:        { label: '할 일',    color: 'bg-gray-100 text-gray-600' },
-  in_progress: { label: '진행 중',  color: 'bg-blue-100 text-blue-700' },
-  review:      { label: '검토 대기', color: 'bg-yellow-100 text-yellow-700' },
-  done:        { label: '완료',     color: 'bg-green-100 text-green-700' },
+  todo:        { label: '할 일',     color: 'bg-[#f0f0f3] text-[#60646c]' },
+  in_progress: { label: '진행 중',   color: 'bg-[#e8f4ff] text-[#0d74ce]' },
+  review:      { label: '검토 대기', color: 'bg-[#f3ecfa] text-[#8145b5]' },
+  done:        { label: '완료',      color: 'bg-[#dcfce7] text-[#16a34a]' },
 }
 
 const PRIORITY = {
-  low:    { label: '낮음', color: 'bg-gray-100 text-gray-500' },
-  medium: { label: '보통', color: 'bg-orange-100 text-orange-600' },
-  high:   { label: '높음', color: 'bg-red-100 text-red-600' },
+  low:    { label: '낙음', color: 'bg-[#f0f0f3] text-[#999999]' },
+  medium: { label: '보통', color: 'bg-[#fef3c7] text-[#ab6400]' },
+  high:   { label: '높음', color: 'bg-[#fef2f2] text-[#ef4444]' },
 }
+
+const pillBase = 'inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold uppercase tracking-[0.6px]'
 
 export function StatusBadge({ status }) {
   const s = STATUS[status] ?? STATUS.todo
-  return (
-    <span className={`inline-flex items-center text-xs font-medium px-2 py-0.5 rounded-full ${s.color}`}>
-      {s.label}
-    </span>
-  )
+  return <span className={`${pillBase} ${s.color}`}>{s.label}</span>
 }
 
 export function PriorityBadge({ priority }) {
   const p = PRIORITY[priority] ?? PRIORITY.medium
-  return (
-    <span className={`inline-flex items-center text-xs font-medium px-2 py-0.5 rounded-full ${p.color}`}>
-      {p.label}
-    </span>
-  )
+  return <span className={`${pillBase} ${p.color}`}>{p.label}</span>
 }
 
 export const STATUS_OPTIONS = Object.entries(STATUS).map(([value, { label }]) => ({ value, label }))

@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 
+const inputCls = 'w-full bg-white border border-[#dcdee0] rounded-lg px-4 py-2.5 text-sm text-[#171717] h-11 focus:outline-none focus:ring-2 focus:ring-[#171717] placeholder:text-[#999999]'
+
 export default function LoginPage() {
   const router = useRouter()
   const [email, setEmail] = useState('')
@@ -37,58 +39,39 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+    <div className="min-h-screen flex items-center justify-center bg-[#fafafa]">
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
-          <h1 className="text-2xl font-bold text-gray-900">Kong</h1>
-          <p className="text-sm text-gray-500 mt-1">팀 이슈 트래커</p>
+          <h1 className="text-2xl font-semibold text-[#171717] tracking-tight">Kong</h1>
+          <p className="text-sm text-[#60646c] mt-1">팀 이슈 트래커</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="bg-white shadow-sm border border-gray-200 rounded-xl p-8 space-y-4">
-          <h2 className="text-lg font-semibold text-gray-800 mb-2">로그인</h2>
+        <form onSubmit={handleSubmit} className="bg-white border border-[#dcdee0] rounded-xl p-8 space-y-4">
+          <h2 className="text-base font-semibold text-[#171717] mb-2">로그인</h2>
 
           {error && (
-            <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+            <p className="text-sm text-[#eb8e90] bg-[#fff5f5] border border-[#fecaca] rounded-lg px-3 py-2">
               {error}
             </p>
           )}
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">이메일</label>
-            <input
-              type="email"
-              value={email}
-              onChange={e => setEmail(e.target.value)}
-              placeholder="name@mindwareworks.com"
-              required
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder:text-gray-400"
-            />
+            <label className="block text-sm font-medium text-[#171717] mb-1">이메일</label>
+            <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="name@mindwareworks.com" required className={inputCls} />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">비밀번호</label>
-            <input
-              type="password"
-              value={password}
-              onChange={e => setPassword(e.target.value)}
-              required
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder:text-gray-400"
-            />
+            <label className="block text-sm font-medium text-[#171717] mb-1">비밀번호</label>
+            <input type="password" value={password} onChange={e => setPassword(e.target.value)} required className={inputCls} />
           </div>
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white font-medium py-2 rounded-lg text-sm transition-colors"
-          >
+          <button type="submit" disabled={loading} className="w-full bg-[#000000] hover:bg-[#1a1a1a] disabled:bg-[#cccccc] text-white text-sm font-medium py-2.5 rounded-lg transition-colors">
             {loading ? '로그인 중...' : '로그인'}
           </button>
 
-          <p className="text-center text-sm text-gray-500">
+          <p className="text-center text-sm text-[#60646c]">
             계정이 없으신가요?{' '}
-            <Link href="/signup" className="text-blue-600 hover:underline font-medium">
-              회원가입
-            </Link>
+            <Link href="/signup" className="text-[#0d74ce] hover:underline font-medium">회원가입</Link>
           </p>
         </form>
       </div>
