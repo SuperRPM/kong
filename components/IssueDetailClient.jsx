@@ -25,6 +25,8 @@ export default function IssueDetailClient({ issue, members, projectId }) {
   const [editing, setEditing] = useState(false)
   const [deleteConfirm, setDeleteConfirm] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [loadingDelete, setLoadingDelete] = useState(false)
+  const [deleteError, setDeleteError] = useState(null)
   const prefix = issue.project?.prefix ?? 'REQ'
   const [form, setForm] = useState({
     title: issue.title,
@@ -63,9 +65,19 @@ export default function IssueDetailClient({ issue, members, projectId }) {
   }
 
   async function handleDelete() {
+    setLoadingDelete(true)
+    setDeleteError(null)
     const supabase = createClient()
-    const { error } = await supabase.from('issues').update({ deleted_at: new Date().toISOString() }).eq('id', issue.id)
-    if (!error) router.push(`/projects/${projectId}`)
+    const { error } = await supabase
+      .from('issues')
+      .update({ deleted_at: new Date().toISOString() })
+      .eq('id', issue.id)
+    setLoadingDelete(false)
+    if (error) {
+      setDeleteError(error.message)
+      return
+    }
+    router.push(`/projects/${projectId}`)
   }
 
   const id = issueId(prefix, issue.category, issue.number)
@@ -210,9 +222,14 @@ export default function IssueDetailClient({ issue, members, projectId }) {
             <p className="text-sm text-[#60646c] mb-5">
               <span className="font-medium text-[#171717]">{issue.title}</span>을(를) 휴지통으로 이동합니다. 30일 이내 복구 가능합니다.
             </p>
+            {deleteError && (
+              <p className="text-sm text-[#ef4444] mb-4">{deleteError}</p>
+            )}
             <div className="flex justify-end gap-2">
-              <button onClick={() => setDeleteConfirm(false)} className="text-sm font-medium text-[#60646c] hover:text-[#171717] px-4 py-2 transition-colors">취소</button>
-              <button onClick={handleDelete} className="bg-[#ef4444] hover:bg-[#dc2626] text-white text-sm font-medium px-[18px] py-[10px] rounded-lg transition-colors">삭제</button>
+              <button onClick={() => setDeleteConfirm(false)} disabled={loadingDelete} className="text-sm font-medium text-[#60646c] hover:text-[#171717] px-4 py-2 transition-colors disabled:opacity-50">취소</button>
+              <button onClick={handleDelete} disabled={loadingDelete} className="bg-[#ef4444] hover:bg-[#dc2626] disabled:bg-[#cccccc] text-white text-sm font-medium px-[18px] py-[10px] rounded-lg transition-colors">
+                {loadingDelete ? '삭제 중...' : '삭제'}
+              </button>
             </div>
           </div>
         </div>
