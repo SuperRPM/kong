@@ -3,9 +3,11 @@
 import { useState } from 'react'
 import IssueList from './IssueList'
 import ProjectStats from './ProjectStats'
+import KanbanBoard from './KanbanBoard'
 
 const VIEWS = [
   { key: 'list', label: '목록' },
+  { key: 'kanban', label: '칸반' },
   { key: 'stats', label: '통계' },
 ]
 
@@ -36,6 +38,13 @@ export default function ProjectViewClient({ projectId, projectPrefix, initialIss
           projectPrefix={projectPrefix}
           initialIssues={initialIssues}
           members={members}
+        />
+      )}
+      {view === 'kanban' && (
+        <KanbanBoard
+          projectId={projectId}
+          projectPrefix={projectPrefix}
+          initialIssues={initialIssues}
         />
       )}
       {view === 'stats' && (

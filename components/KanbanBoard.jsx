@@ -1,0 +1,116 @@
+'use client'
+
+import { useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { createClient } from '@/lib/supabase/client'
+import { PriorityBadge, STATUS_OPTIONS } from './StatusBadge'
+
+function fmtId(prefix, category, number) {
+  if (!category || !number) return null
+  return `${prefix}-${category}-${String(number).padStart(3, '0')}`
+}
+
+const COL_TOP_BORDER = {
+  todo: 'border-[#aaaaaa]',
+  in_progress: 'border-[#0d74ce]',
+  review: 'border-[#f59e0b]',
+  done: 'border-[#22c55e]',
+}
+
+const COL_HEADER_COLOR = {
+  todo: 'text-[#60646c]',
+  in_progress: 'text-[#0d74ce]',
+  review: 'text-[#d97706]',
+  done: 'text-[#16a34a]',
+}
+
+export default function KanbanBoard({ projectId, projectPrefix, initialIssues }) {
+  const router = useRouter()
+  const [issues, setIssues] = useState(initialIssues)
+  const [draggingId, setDraggingId] = useState(null)
+  const [overColumn, setOverColumn] = useState(null)
+
+  const columns = STATUS_OPTIONS.map(opt => ({
+    ...opt,
+    issues: issues.filter(i => i.status === opt.value),
+  }))
+
+  async function handleDrop(issueId, newStatus) {
+    const issue = issues.find(i => i.id === issueId)
+    if (!issue || issue.status === newStatus) return
+
+    const updates = { status: newStatus }
+    if (newStatus === 'done' && !issue.completed_at) {
+      updates.completed_at = new Date().toISOString().split('T')[0]
+    }
+
+    setIssues(prev => prev.map(i => i.id === issueId ? { ...i, ...updates } : i))
+
+    const supabase = createClient()
+    const { error } = await supabase.from('issues').update(updates).eq('id', issueId)
+    if (error) {
+      setIssues(prev => prev.map(i => i.id === issueId ? { ...i, status: issue.status, completed_at: issue.completed_at } : i))
+    }
+  }
+
+  return (
+    <div className="flex gap-4 overflow-x-auto pb-4 -mx-1 px-1">
+      {columns.map(col => (
+        <div
+          key={col.value}
+          onDragOver={e => { e.preventDefault(); setOverColumn(col.value) }}
+          onDragLeave={e => {
+            if (!e.currentTarget.contains(e.relatedTarget)) setOverColumn(null)
+          }}
+          onDrop={e => {
+            e.preventDefault()
+            const id = draggingId
+            setOverColumn(null)
+            setDraggingId(null)
+            if (id) handleDrop(id, col.value)
+          }}
+          className={`flex-1 min-w-[200px] max-w-[280px] border-t-2 rounded-xl transition-colors ${
+            overColumn === col.value ? 'bg-[#f0f0f3]' : 'bg-[#fafafa]'
+          } ${COL_TOP_BORDER[col.value]}`}
+        >
+          <div className="px-3 pt-3 pb-2 flex items-center justify-between">
+            <span className={`text-xs font-semibold uppercase tracking-wide ${COL_HEADER_COLOR[col.value]}`}>
+              {col.label}
+            </span>
+            <span className="text-xs text-[#999999] font-medium">{col.issues.length}</span>
+          </div>
+
+          <div className="px-3 pb-3 space-y-2 min-h-[80px]">
+            {col.issues.map(issue => {
+              const id = fmtId(projectPrefix, issue.category, issue.number)
+              return (
+                <div
+                  key={issue.id}
+                  draggable
+                  onDragStart={e => {
+                    setDraggingId(issue.id)
+                    e.dataTransfer.effectAllowed = 'move'
+                  }}
+                  onDragEnd={() => { setDraggingId(null); setOverColumn(null) }}
+                  onClick={() => router.push(`/projects/${projectId}/issues/${issue.id}`)}
+                  className={`bg-white border border-[#dcdee0] rounded-lg p-3 cursor-grab active:cursor-grabbing shadow-sm hover:shadow-md transition-all select-none ${
+                    draggingId === issue.id ? 'opacity-40 scale-95' : ''
+                  }`}
+                >
+                  {id && <span className="font-mono text-[10px] text-[#999999] block mb-1">{id}</span>}
+                  <p className="text-sm text-[#171717] leading-snug mb-2 line-clamp-2">{issue.title}</p>
+                  <div className="flex items-center justify-between gap-2">
+                    <PriorityBadge priority={issue.priority} />
+                    {issue.assignee?.name && (
+                      <span className="text-xs text-[#999999] truncate">{issue.assignee.name}</span>
+                    )}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
