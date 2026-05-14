@@ -58,7 +58,7 @@ export default function NewProjectButton() {
                   placeholder="프로젝트 이름"
                   required
                   autoFocus
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder:text-gray-400"
                 />
               </div>
               <div>
@@ -68,7 +68,7 @@ export default function NewProjectButton() {
                   onChange={e => setDescription(e.target.value)}
                   placeholder="프로젝트 설명 (선택)"
                   rows={3}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none placeholder:text-gray-400"
                 />
               </div>
               <div className="flex justify-end gap-2 pt-2">

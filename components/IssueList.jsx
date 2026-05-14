@@ -10,7 +10,7 @@ const EMPTY_FORM = { title: '', description: '', status: 'todo', priority: 'medi
 export default function IssueList({ projectId, initialIssues, members }) {
   const router = useRouter()
   const [issues, setIssues] = useState(initialIssues)
-  const [modal, setModal] = useState(null) // null | 'new' | issue object
+  const [modal, setModal] = useState(null)
   const [form, setForm] = useState(EMPTY_FORM)
   const [loading, setLoading] = useState(false)
   const [deleteConfirm, setDeleteConfirm] = useState(null)
@@ -135,7 +135,7 @@ export default function IssueList({ projectId, initialIssues, members }) {
                 <select
                   value={issue.status}
                   onChange={e => handleStatusChange(issue, e.target.value)}
-                  className="text-xs border border-gray-200 rounded-lg px-2 py-1 text-gray-600 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  className="text-xs border border-gray-200 rounded-lg px-2 py-1 text-gray-900 focus:outline-none focus:ring-1 focus:ring-blue-500"
                 >
                   {STATUS_OPTIONS.map(opt => (
                     <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -153,7 +153,6 @@ export default function IssueList({ projectId, initialIssues, members }) {
         </div>
       )}
 
-      {/* 이슈 생성/수정 모달 */}
       {modal !== null && (
         <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50">
           <div className="bg-white rounded-xl shadow-xl p-6 w-full max-w-lg mx-4">
@@ -169,7 +168,7 @@ export default function IssueList({ projectId, initialIssues, members }) {
                   onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
                   required
                   autoFocus
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder:text-gray-400"
                 />
               </div>
               <div>
@@ -178,7 +177,7 @@ export default function IssueList({ projectId, initialIssues, members }) {
                   value={form.description}
                   onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
                   rows={3}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none placeholder:text-gray-400"
                 />
               </div>
               <div className="grid grid-cols-2 gap-4">
@@ -187,7 +186,7 @@ export default function IssueList({ projectId, initialIssues, members }) {
                   <select
                     value={form.status}
                     onChange={e => setForm(f => ({ ...f, status: e.target.value }))}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
                     {STATUS_OPTIONS.map(opt => (
                       <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -199,7 +198,7 @@ export default function IssueList({ projectId, initialIssues, members }) {
                   <select
                     value={form.priority}
                     onChange={e => setForm(f => ({ ...f, priority: e.target.value }))}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
                     {PRIORITY_OPTIONS.map(opt => (
                       <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -212,7 +211,7 @@ export default function IssueList({ projectId, initialIssues, members }) {
                 <select
                   value={form.assignee_id}
                   onChange={e => setForm(f => ({ ...f, assignee_id: e.target.value }))}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="">미지정</option>
                   {members.map(m => (
@@ -241,7 +240,6 @@ export default function IssueList({ projectId, initialIssues, members }) {
         </div>
       )}
 
-      {/* 삭제 확인 모달 */}
       {deleteConfirm && (
         <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50">
           <div className="bg-white rounded-xl shadow-xl p-6 w-full max-w-sm mx-4">
