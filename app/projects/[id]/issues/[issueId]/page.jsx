@@ -11,7 +11,7 @@ export default async function IssuePage({ params }) {
   if (!user) redirect('/login')
 
   const [{ data: profile }, { data: issue }, { data: members }, { data: comments }, { data: activityLogs }] = await Promise.all([
-    supabase.from('profiles').select('name').eq('id', user.id).single(),
+    supabase.from('profiles').select('name, is_admin').eq('id', user.id).single(),
     supabase
       .from('issues')
       .select('id, title, description, status, priority, category, number, planned_at, completed_at, assignee_id, assignee:assignee_id(name), requester:created_by(name), project:project_id(id, name, prefix)')
