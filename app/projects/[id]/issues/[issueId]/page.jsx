@@ -10,7 +10,7 @@ export default async function IssuePage({ params }) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  const [{ data: profile }, { data: issue }, { data: members }] = await Promise.all([
+  const [{ data: profile }, { data: issue }, { data: members }, { data: comments }] = await Promise.all([
     supabase.from('profiles').select('name').eq('id', user.id).single(),
     supabase
       .from('issues')
@@ -18,6 +18,12 @@ export default async function IssuePage({ params }) {
       .eq('id', issueId)
       .single(),
     supabase.from('profiles').select('id, name').order('name'),
+    supabase
+      .from('issue_comments')
+      .select('id, body, created_at, author_id, author:author_id(name)')
+      .eq('issue_id', issueId)
+      .is('deleted_at', null)
+      .order('created_at', { ascending: true }),
   ])
 
   if (!issue) notFound()
@@ -32,7 +38,13 @@ export default async function IssuePage({ params }) {
         >
           ← {issue.project?.name}
         </Link>
-        <IssueDetailClient issue={issue} members={members ?? []} projectId={projectId} />
+        <IssueDetailClient
+          issue={issue}
+          members={members ?? []}
+          projectId={projectId}
+          initialComments={comments ?? []}
+          currentUserId={user.id}
+        />
       </main>
     </div>
   )

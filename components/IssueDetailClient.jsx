@@ -15,12 +15,103 @@ const inputCls = 'w-full bg-white border border-[#dcdee0] rounded-lg px-4 py-2.5
 const selectCls = 'w-full bg-white border border-[#dcdee0] rounded-lg px-4 py-2.5 text-sm text-[#171717] focus:outline-none focus:ring-2 focus:ring-[#171717]'
 const labelCls = 'block text-sm font-medium text-[#171717] mb-1'
 
-function issueId(prefix, category, number) {
+function formatIssueId(prefix, category, number) {
   if (!category || !number) return null
   return `${prefix}-${category}-${String(number).padStart(3, '0')}`
 }
 
-export default function IssueDetailClient({ issue, members, projectId }) {
+function formatDate(ts) {
+  if (!ts) return ''
+  const d = new Date(ts)
+  return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
+}
+
+function CommentsSection({ issueId, initialComments, currentUserId }) {
+  const [comments, setComments] = useState(initialComments)
+  const [body, setBody] = useState('')
+  const [submitting, setSubmitting] = useState(false)
+
+  async function handleSubmit(e) {
+    e.preventDefault()
+    if (!body.trim()) return
+    setSubmitting(true)
+    const supabase = createClient()
+    const { data, error } = await supabase
+      .from('issue_comments')
+      .insert({ issue_id: issueId, author_id: currentUserId, body: body.trim() })
+      .select('id, body, created_at, author_id, author:author_id(name)')
+      .single()
+    setSubmitting(false)
+    if (!error && data) {
+      setComments(c => [...c, data])
+      setBody('')
+    }
+  }
+
+  async function handleDelete(commentId) {
+    const supabase = createClient()
+    const { error } = await supabase
+      .from('issue_comments')
+      .update({ deleted_at: new Date().toISOString() })
+      .eq('id', commentId)
+    if (!error) {
+      setComments(c => c.filter(x => x.id !== commentId))
+    }
+  }
+
+  return (
+    <div className="mt-6 bg-white border border-[#dcdee0] rounded-xl p-6">
+      <h2 className="text-sm font-semibold text-[#171717] mb-4">
+        댓글{comments.length > 0 ? ` (${comments.length})` : ''}
+      </h2>
+
+      {comments.length > 0 && (
+        <div className="space-y-3 mb-5">
+          {comments.map(c => (
+            <div key={c.id} className="bg-[#f9f9fb] border border-[#f0f0f3] rounded-lg px-4 py-3">
+              <div className="flex items-center justify-between mb-1.5">
+                <span className="text-xs font-medium text-[#171717]">{c.author?.name ?? '알 수 없음'}</span>
+                <div className="flex items-center gap-3">
+                  <span className="text-xs text-[#aaaaaa]">{formatDate(c.created_at)}</span>
+                  {c.author_id === currentUserId && (
+                    <button
+                      onClick={() => handleDelete(c.id)}
+                      className="text-xs text-[#aaaaaa] hover:text-[#ef4444] transition-colors"
+                    >
+                      삭제
+                    </button>
+                  )}
+                </div>
+              </div>
+              <p className="text-sm text-[#171717] whitespace-pre-wrap leading-relaxed">{c.body}</p>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <form onSubmit={handleSubmit} className="space-y-2">
+        <textarea
+          value={body}
+          onChange={e => setBody(e.target.value)}
+          placeholder="댓글을 입력하세요..."
+          rows={3}
+          className={`${inputCls} resize-none`}
+        />
+        <div className="flex justify-end">
+          <button
+            type="submit"
+            disabled={submitting || !body.trim()}
+            className="bg-[#000000] hover:bg-[#1a1a1a] disabled:bg-[#cccccc] text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+          >
+            {submitting ? '등록 중...' : '댓글 등록'}
+          </button>
+        </div>
+      </form>
+    </div>
+  )
+}
+
+export default function IssueDetailClient({ issue, members, projectId, initialComments, currentUserId }) {
   const router = useRouter()
   const [editing, setEditing] = useState(false)
   const [deleteConfirm, setDeleteConfirm] = useState(false)
@@ -80,7 +171,7 @@ export default function IssueDetailClient({ issue, members, projectId }) {
     router.push(`/projects/${projectId}`)
   }
 
-  const id = issueId(prefix, issue.category, issue.number)
+  const id = formatIssueId(prefix, issue.category, issue.number)
 
   return (
     <>
@@ -151,6 +242,12 @@ export default function IssueDetailClient({ issue, members, projectId }) {
           </button>
         </div>
       </div>
+
+      <CommentsSection
+        issueId={issue.id}
+        initialComments={initialComments}
+        currentUserId={currentUserId}
+      />
 
       {editing && (
         <div className="fixed inset-0 bg-black/20 flex items-center justify-center z-50">
