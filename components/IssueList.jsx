@@ -1,14 +1,12 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { StatusBadge, PriorityBadge, STATUS_OPTIONS, PRIORITY_OPTIONS } from './StatusBadge'
 
 const EMPTY_FORM = { title: '', description: '', status: 'todo', priority: 'medium', assignee_id: '' }
 
 export default function IssueList({ projectId, initialIssues, members }) {
-  const router = useRouter()
   const [issues, setIssues] = useState(initialIssues)
   const [modal, setModal] = useState(null)
   const [form, setForm] = useState(EMPTY_FORM)
@@ -52,10 +50,7 @@ export default function IssueList({ projectId, initialIssues, members }) {
         .insert({ ...payload, project_id: projectId, created_by: user.id })
         .select('id, title, status, priority, created_at, assignee_id, assignee:assignee_id(name)')
         .single()
-
-      if (!error && data) {
-        setIssues(prev => [data, ...prev])
-      }
+      if (!error && data) setIssues(prev => [data, ...prev])
     } else {
       const { data, error } = await supabase
         .from('issues')
@@ -63,10 +58,7 @@ export default function IssueList({ projectId, initialIssues, members }) {
         .eq('id', modal.id)
         .select('id, title, status, priority, created_at, assignee_id, assignee:assignee_id(name)')
         .single()
-
-      if (!error && data) {
-        setIssues(prev => prev.map(i => i.id === data.id ? data : i))
-      }
+      if (!error && data) setIssues(prev => prev.map(i => i.id === data.id ? data : i))
     }
 
     setLoading(false)
@@ -76,9 +68,7 @@ export default function IssueList({ projectId, initialIssues, members }) {
   async function handleDelete(id) {
     const supabase = createClient()
     const { error } = await supabase.from('issues').delete().eq('id', id)
-    if (!error) {
-      setIssues(prev => prev.filter(i => i.id !== id))
-    }
+    if (!error) setIssues(prev => prev.filter(i => i.id !== id))
     setDeleteConfirm(null)
   }
 
@@ -96,46 +86,47 @@ export default function IssueList({ projectId, initialIssues, members }) {
   return (
     <>
       <div className="flex items-center justify-between mb-4">
-        <span className="text-sm text-gray-500">{issues.length}개의 이슈</span>
+        <span className="text-sm text-slate-400">{issues.length}개의 이슈</span>
         <button
           onClick={openNew}
-          className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+          className="bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
         >
           + 새 이슈
         </button>
       </div>
 
       {issues.length === 0 ? (
-        <div className="text-center py-20 text-gray-400 text-sm">
+        <div className="text-center py-20 text-slate-500 text-sm">
           이슈가 없습니다. 새 이슈를 만들어보세요.
         </div>
       ) : (
-        <div className="space-y-2">
-          {issues.map(issue => (
-            <div
-              key={issue.id}
-              className="bg-white border border-gray-200 rounded-xl px-5 py-4 flex items-start gap-4"
-            >
-              <div className="flex-1 min-w-0">
+        <div className="bg-slate-800 border border-slate-700 rounded-xl overflow-hidden">
+          <div className="flex items-center px-4 py-2 bg-slate-700/50 border-b border-slate-700 gap-3">
+            <span className="flex-1 text-xs font-medium text-slate-400">제목</span>
+            <span className="w-24 text-xs font-medium text-slate-400">상태</span>
+            <span className="w-16 text-xs font-medium text-slate-400">우선순위</span>
+            <span className="w-20 text-xs font-medium text-slate-400">담당자</span>
+            <span className="w-28 text-xs font-medium text-slate-400">상태변경</span>
+            <span className="w-8"></span>
+          </div>
+          <div className="divide-y divide-slate-700/60">
+            {issues.map(issue => (
+              <div key={issue.id} className="flex items-center px-4 py-3 hover:bg-slate-700/30 gap-3 transition-colors">
                 <button
                   onClick={() => openEdit(issue)}
-                  className="text-sm font-medium text-gray-900 hover:text-blue-600 text-left"
+                  className="flex-1 min-w-0 text-sm text-slate-200 hover:text-blue-400 text-left truncate transition-colors"
                 >
                   {issue.title}
                 </button>
-                <div className="flex items-center gap-2 mt-2 flex-wrap">
-                  <StatusBadge status={issue.status} />
-                  <PriorityBadge priority={issue.priority} />
-                  {issue.assignee?.name && (
-                    <span className="text-xs text-gray-500">{issue.assignee.name}</span>
-                  )}
-                </div>
-              </div>
-              <div className="flex items-center gap-2 shrink-0">
+                <div className="w-24 shrink-0"><StatusBadge status={issue.status} /></div>
+                <div className="w-16 shrink-0"><PriorityBadge priority={issue.priority} /></div>
+                <span className="w-20 shrink-0 text-xs text-slate-400 truncate">
+                  {issue.assignee?.name ?? '-'}
+                </span>
                 <select
                   value={issue.status}
                   onChange={e => handleStatusChange(issue, e.target.value)}
-                  className="text-xs border border-gray-200 rounded-lg px-2 py-1 text-gray-900 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  className="w-28 shrink-0 text-xs bg-slate-700 border border-slate-600 rounded px-2 py-1 text-slate-300 focus:outline-none focus:ring-1 focus:ring-blue-500"
                 >
                   {STATUS_OPTIONS.map(opt => (
                     <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -143,50 +134,50 @@ export default function IssueList({ projectId, initialIssues, members }) {
                 </select>
                 <button
                   onClick={() => setDeleteConfirm(issue)}
-                  className="text-xs text-gray-400 hover:text-red-500 px-1"
+                  className="w-8 shrink-0 text-xs text-slate-500 hover:text-red-400 transition-colors text-center"
                 >
                   삭제
                 </button>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       )}
 
       {modal !== null && (
-        <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl shadow-xl p-6 w-full max-w-lg mx-4">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
+          <div className="bg-slate-800 border border-slate-700 rounded-xl shadow-2xl p-6 w-full max-w-lg mx-4">
+            <h2 className="text-lg font-semibold text-slate-100 mb-4">
               {modal === 'new' ? '새 이슈' : '이슈 수정'}
             </h2>
             <form onSubmit={handleSave} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">제목 *</label>
+                <label className="block text-sm font-medium text-slate-300 mb-1">제목 *</label>
                 <input
                   type="text"
                   value={form.title}
                   onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
                   required
                   autoFocus
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder:text-gray-400"
+                  className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder:text-slate-500"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">설명</label>
+                <label className="block text-sm font-medium text-slate-300 mb-1">설명</label>
                 <textarea
                   value={form.description}
                   onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
                   rows={3}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none placeholder:text-gray-400"
+                  className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none placeholder:text-slate-500"
                 />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">상태</label>
+                  <label className="block text-sm font-medium text-slate-300 mb-1">상태</label>
                   <select
                     value={form.status}
                     onChange={e => setForm(f => ({ ...f, status: e.target.value }))}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
                     {STATUS_OPTIONS.map(opt => (
                       <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -194,11 +185,11 @@ export default function IssueList({ projectId, initialIssues, members }) {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">우선순위</label>
+                  <label className="block text-sm font-medium text-slate-300 mb-1">우선순위</label>
                   <select
                     value={form.priority}
                     onChange={e => setForm(f => ({ ...f, priority: e.target.value }))}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
                     {PRIORITY_OPTIONS.map(opt => (
                       <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -207,11 +198,11 @@ export default function IssueList({ projectId, initialIssues, members }) {
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">담당자</label>
+                <label className="block text-sm font-medium text-slate-300 mb-1">담당자</label>
                 <select
                   value={form.assignee_id}
                   onChange={e => setForm(f => ({ ...f, assignee_id: e.target.value }))}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="">미지정</option>
                   {members.map(m => (
@@ -223,14 +214,14 @@ export default function IssueList({ projectId, initialIssues, members }) {
                 <button
                   type="button"
                   onClick={() => setModal(null)}
-                  className="text-sm text-gray-500 hover:text-gray-700 px-4 py-2"
+                  className="text-sm text-slate-400 hover:text-slate-100 px-4 py-2 transition-colors"
                 >
                   취소
                 </button>
                 <button
                   type="submit"
                   disabled={loading}
-                  className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+                  className="bg-blue-600 hover:bg-blue-500 disabled:bg-blue-800 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
                 >
                   {loading ? '저장 중...' : '저장'}
                 </button>
@@ -241,22 +232,22 @@ export default function IssueList({ projectId, initialIssues, members }) {
       )}
 
       {deleteConfirm && (
-        <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl shadow-xl p-6 w-full max-w-sm mx-4">
-            <h2 className="text-base font-semibold text-gray-900 mb-2">이슈 삭제</h2>
-            <p className="text-sm text-gray-600 mb-4">
-              <span className="font-medium">{deleteConfirm.title}</span>을(를) 삭제할까요? 되돌릴 수 없습니다.
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
+          <div className="bg-slate-800 border border-slate-700 rounded-xl shadow-2xl p-6 w-full max-w-sm mx-4">
+            <h2 className="text-base font-semibold text-slate-100 mb-2">이슈 삭제</h2>
+            <p className="text-sm text-slate-400 mb-4">
+              <span className="font-medium text-slate-200">{deleteConfirm.title}</span>을(를) 삭제할까요? 되돌릴 수 없습니다.
             </p>
             <div className="flex justify-end gap-2">
               <button
                 onClick={() => setDeleteConfirm(null)}
-                className="text-sm text-gray-500 hover:text-gray-700 px-4 py-2"
+                className="text-sm text-slate-400 hover:text-slate-100 px-4 py-2 transition-colors"
               >
                 취소
               </button>
               <button
                 onClick={() => handleDelete(deleteConfirm.id)}
-                className="bg-red-600 hover:bg-red-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+                className="bg-red-600 hover:bg-red-500 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
               >
                 삭제
               </button>

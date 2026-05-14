@@ -39,18 +39,18 @@ export default function NewProjectButton() {
     <>
       <button
         onClick={() => setOpen(true)}
-        className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+        className="bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
       >
         + 새 프로젝트
       </button>
 
       {open && (
-        <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl shadow-xl p-6 w-full max-w-md mx-4">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">새 프로젝트</h2>
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
+          <div className="bg-slate-800 border border-slate-700 rounded-xl shadow-2xl p-6 w-full max-w-md mx-4">
+            <h2 className="text-lg font-semibold text-slate-100 mb-4">새 프로젝트</h2>
             <form onSubmit={handleCreate} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">이름 *</label>
+                <label className="block text-sm font-medium text-slate-300 mb-1">이름 *</label>
                 <input
                   type="text"
                   value={name}
@@ -58,31 +58,31 @@ export default function NewProjectButton() {
                   placeholder="프로젝트 이름"
                   required
                   autoFocus
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder:text-gray-400"
+                  className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder:text-slate-500"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">설명</label>
+                <label className="block text-sm font-medium text-slate-300 mb-1">설명</label>
                 <textarea
                   value={description}
                   onChange={e => setDescription(e.target.value)}
                   placeholder="프로젝트 설명 (선택)"
                   rows={3}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none placeholder:text-gray-400"
+                  className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none placeholder:text-slate-500"
                 />
               </div>
               <div className="flex justify-end gap-2 pt-2">
                 <button
                   type="button"
                   onClick={() => setOpen(false)}
-                  className="text-sm text-gray-500 hover:text-gray-700 px-4 py-2"
+                  className="text-sm text-slate-400 hover:text-slate-100 px-4 py-2 transition-colors"
                 >
                   취소
                 </button>
                 <button
                   type="submit"
                   disabled={loading}
-                  className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+                  className="bg-blue-600 hover:bg-blue-500 disabled:bg-blue-800 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
                 >
                   {loading ? '생성 중...' : '생성'}
                 </button>

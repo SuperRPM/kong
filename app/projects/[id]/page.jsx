@@ -15,7 +15,7 @@ export default async function ProjectPage({ params }) {
       supabase.from('projects').select('id, name, description').eq('id', id).single(),
       supabase
         .from('issues')
-        .select('id, title, status, priority, created_at, assignee:assignee_id(name)')
+        .select('id, title, status, priority, created_at, assignee_id, assignee:assignee_id(name)')
         .eq('project_id', id)
         .order('created_at', { ascending: false }),
       supabase.from('profiles').select('id, name'),
@@ -24,13 +24,13 @@ export default async function ProjectPage({ params }) {
   if (!project) notFound()
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-slate-900">
       <Navbar user={profile} />
       <main className="max-w-5xl mx-auto px-6 py-8">
         <div className="mb-6">
-          <h1 className="text-xl font-bold text-gray-900">{project.name}</h1>
+          <h1 className="text-xl font-bold text-slate-100">{project.name}</h1>
           {project.description && (
-            <p className="text-sm text-gray-500 mt-1">{project.description}</p>
+            <p className="text-sm text-slate-400 mt-1">{project.description}</p>
           )}
         </div>
         <IssueList
