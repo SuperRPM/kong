@@ -156,7 +156,6 @@ export default function IssueList({ projectId, projectPrefix, initialIssues, mem
             <span className="w-24 text-[11px] font-semibold uppercase tracking-[0.88px] text-[#999999]">계획완료일</span>
             <span className="w-24 text-[11px] font-semibold uppercase tracking-[0.88px] text-[#999999]">완료일</span>
             <span className="w-28 text-[11px] font-semibold uppercase tracking-[0.88px] text-[#999999]">상태변경</span>
-            <span className="w-6"></span>
           </div>
           <div className="divide-y divide-[#f0f0f3]">
             {filtered.map(issue => (
@@ -183,12 +182,6 @@ export default function IssueList({ projectId, projectPrefix, initialIssues, mem
                 >
                   {STATUS_OPTIONS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
                 </select>
-                <button
-                  onClick={() => setDeleteConfirm(issue)}
-                  className="w-6 shrink-0 text-xs text-[#cccccc] hover:text-[#ef4444] transition-colors text-center"
-                >
-                  ×
-                </button>
               </div>
             ))}
           </div>
@@ -250,11 +243,24 @@ export default function IssueList({ projectId, projectPrefix, initialIssues, mem
                 <label className={labelCls}>실제 완료일</label>
                 <input type="date" value={form.completed_at} onChange={e => setForm(f => ({ ...f, completed_at: e.target.value }))} className={inputCls} />
               </div>
-              <div className="flex justify-end gap-2 pt-2">
-                <button type="button" onClick={() => setModal(null)} className="text-sm font-medium text-[#60646c] hover:text-[#171717] px-4 py-2 transition-colors">취소</button>
-                <button type="submit" disabled={loading} className="bg-[#000000] hover:bg-[#1a1a1a] disabled:bg-[#cccccc] text-white text-sm font-medium px-[18px] py-[10px] rounded-lg transition-colors">
-                  {loading ? '저장 중...' : '저장'}
-                </button>
+              <div className="flex items-center justify-between pt-2">
+                <div>
+                  {modal !== 'new' && (
+                    <button
+                      type="button"
+                      onClick={() => { setModal(null); setDeleteConfirm(modal) }}
+                      className="text-sm font-medium text-[#ef4444] hover:text-[#dc2626] px-4 py-2 transition-colors"
+                    >
+                      이슈 삭제
+                    </button>
+                  )}
+                </div>
+                <div className="flex gap-2">
+                  <button type="button" onClick={() => setModal(null)} className="text-sm font-medium text-[#60646c] hover:text-[#171717] px-4 py-2 transition-colors">취소</button>
+                  <button type="submit" disabled={loading} className="bg-[#000000] hover:bg-[#1a1a1a] disabled:bg-[#cccccc] text-white text-sm font-medium px-[18px] py-[10px] rounded-lg transition-colors">
+                    {loading ? '저장 중...' : '저장'}
+                  </button>
+                </div>
               </div>
             </form>
           </div>
