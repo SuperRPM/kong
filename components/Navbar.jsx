@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { VERSION } from '@/lib/version'
+import NotificationBell from '@/components/NotificationBell'
 
 export default function Navbar({ user }) {
   const router = useRouter()
@@ -34,7 +35,8 @@ export default function Navbar({ user }) {
           </Link>
         </>
       )}
-      <div className="ml-auto flex items-center gap-4">
+      <div className="ml-auto flex items-center gap-3">
+        <NotificationBell />
         <span className="text-sm text-[#999999]">{user?.name}</span>
         <button
           onClick={handleLogout}
