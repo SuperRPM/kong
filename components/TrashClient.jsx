@@ -4,9 +4,18 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 
-function daysLeft(deletedAt) {
-  const days = 30 - Math.floor((Date.now() - new Date(deletedAt)) / (1000 * 60 * 60 * 24))
-  return Math.max(0, days)
+function getDaysLeft(deletedAt) {
+  return 30 - Math.floor((Date.now() - new Date(deletedAt)) / 86400000)
+}
+
+function DaysLeftBadge({ deletedAt }) {
+  const daysLeft = getDaysLeft(deletedAt)
+  const isUrgent = daysLeft <= 7
+  return (
+    <span className={`text-xs shrink-0 ${isUrgent ? 'text-[#ef4444] font-medium' : 'text-[#999999]'}`}>
+      {daysLeft}일 후 영구 삭제
+    </span>
+  )
 }
 
 function issueId(prefix, category, number) {
@@ -74,7 +83,7 @@ export default function TrashClient({ initialProjects, initialIssues }) {
                       <p className="text-xs text-[#999999] truncate">{project.description}</p>
                     )}
                   </div>
-                  <span className="text-xs text-[#999999] shrink-0">{daysLeft(project.deleted_at)}일 남음</span>
+                  <DaysLeftBadge deletedAt={project.deleted_at} />
                   <button
                     onClick={() => restoreProject(project.id)}
                     className="text-xs font-medium text-[#0d74ce] hover:underline shrink-0"
@@ -107,7 +116,7 @@ export default function TrashClient({ initialProjects, initialIssues }) {
                     </p>
                     <p className="text-sm text-[#171717] truncate">{issue.title}</p>
                   </div>
-                  <span className="text-xs text-[#999999] shrink-0">{daysLeft(issue.deleted_at)}일 남음</span>
+                  <DaysLeftBadge deletedAt={issue.deleted_at} />
                   <button
                     onClick={() => restoreIssue(issue.id)}
                     className="text-xs font-medium text-[#0d74ce] hover:underline shrink-0"
