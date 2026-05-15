@@ -31,8 +31,8 @@
 - [x] 알림 기능 (담당자 지정/상태 변경 인앱 통지)
 
 ## Phase 6 — 콘텐츠 & 외부 연동 🔄 진행 중
-- [ ] 이미지/스크린샷 체 (Supabase Storage, 이슈 상세 페이지)
-- [ ] Teams 웹훁 연동 — TODO: 담당자 지정/상태 변경 시 Teams 채널 메시지 발송
+- [x] 이미지/스크린샷 첨부 (Supabase Storage, 이슈 상세 페이지)
+- [ ] Teams 웹훅 연동 — TODO: 담당자 지정/상태 변경 시 Teams 채널 메시지 발송
   - Incoming Webhook 또는 Power Automate 플로우 사용
   - TEAMS_WEBHOOK_URL 환경변수로 관리
   - API Route: /api/teams-notify
