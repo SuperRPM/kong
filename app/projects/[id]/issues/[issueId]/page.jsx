@@ -10,7 +10,7 @@ export default async function IssuePage({ params }) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  const [{ data: profile }, { data: issue }, { data: members }, { data: comments }, { data: activityLogs }] = await Promise.all([
+  const [{ data: profile }, { data: issue }, { data: members }, { data: comments }, { data: activityLogs }, { data: attachments }] = await Promise.all([
     supabase.from('profiles').select('name, is_admin').eq('id', user.id).single(),
     supabase
       .from('issues')
@@ -30,6 +30,11 @@ export default async function IssuePage({ params }) {
       .eq('issue_id', issueId)
       .order('created_at', { ascending: false })
       .limit(50),
+    supabase
+      .from('issue_attachments')
+      .select('id, file_path, file_name, file_size, uploaded_by, created_at')
+      .eq('issue_id', issueId)
+      .order('created_at', { ascending: true }),
   ])
 
   if (!issue) notFound()
@@ -38,10 +43,7 @@ export default async function IssuePage({ params }) {
     <div className="min-h-screen bg-white">
       <Navbar user={profile} />
       <main className="max-w-3xl mx-auto px-6 py-8">
-        <Link
-          href={`/projects/${projectId}`}
-          className="inline-flex items-center gap-1 text-sm text-[#0d74ce] hover:underline mb-6"
-        >
+        <Link href={`/projects/${projectId}`} className="inline-flex items-center gap-1 text-sm text-[#0d74ce] hover:underline mb-6">
           ← {issue.project?.name}
         </Link>
         <IssueDetailClient
@@ -51,6 +53,7 @@ export default async function IssuePage({ params }) {
           initialComments={comments ?? []}
           currentUserId={user.id}
           activityLogs={activityLogs ?? []}
+          initialAttachments={attachments ?? []}
         />
       </main>
     </div>
