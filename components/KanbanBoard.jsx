@@ -50,6 +50,8 @@ export default function KanbanBoard({ projectId, projectPrefix, initialIssues })
     const { error } = await supabase.from('issues').update(updates).eq('id', issueId)
     if (error) {
       setIssues(prev => prev.map(i => i.id === issueId ? { ...i, status: issue.status, completed_at: issue.completed_at } : i))
+    } else {
+      router.refresh()
     }
   }
 
