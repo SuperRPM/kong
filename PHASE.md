@@ -32,10 +32,9 @@
 
 ## Phase 6 — 콘텐츠 & 외부 연동 🔄 진행 중
 - [x] 이미지/스크린샷 첨부 (Supabase Storage, 이슈 상세 페이지)
-- [ ] Teams 웹훅 연동 — TODO: 담당자 지정/상태 변경 시 Teams 채널 메시지 발송
-  - Incoming Webhook 또는 Power Automate 플로우 사용
-  - TEAMS_WEBHOOK_URL 환경변수로 관리
-  - API Route: /api/teams-notify
+- [ ] Teams 웹훅 연동 — 보류 (Power Automate 프리미엄 필요 또는 전용 채널 생성 필요)
+  - 조건: Incoming Webhook URL 확보 시 진행
+  - 인앱 벨 알림으로 대체 중
 
 ## Phase 7 — 이슈 품질 향상 (예정)
 - [ ] 이슈 마감일(due date) 설정 + 마감 임박 강조
