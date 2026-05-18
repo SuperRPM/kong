@@ -51,6 +51,35 @@ export default function IssueList({ projectId, projectPrefix, initialIssues, mem
     if (data) setIssues(prev => prev.map(i => i.id === data.id ? data : i))
   }
 
+  const STATUS_KO = { todo: '할 일', in_progress: '진행 중', review: '검토 대기', done: '완료' }
+  const PRIORITY_KO = { low: '낮음', medium: '보통', high: '높음' }
+
+  function handleExportCSV() {
+    const headers = ['ID', '제목', '상태', '우선순위', '카테고리', '담당자', '요청자', '계획완료일', '완료일']
+    const rows = filtered.map(issue => [
+      issueId(projectPrefix, issue.category, issue.number) ?? '',
+      issue.title,
+      STATUS_KO[issue.status] ?? issue.status,
+      PRIORITY_KO[issue.priority] ?? issue.priority,
+      issue.category ?? '',
+      issue.assignee?.name ?? '',
+      issue.requester?.name ?? '',
+      issue.planned_at ?? '',
+      issue.completed_at ?? '',
+    ])
+    const csvContent = [headers, ...rows]
+      .map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
+      .join('\n')
+    const bom = '﻿'
+    const blob = new Blob([bom + csvContent], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `issues_${new Date().toISOString().slice(0, 10)}.csv`
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
   const selectCls = 'text-sm bg-white border border-[#dcdee0] rounded-lg px-3 py-1.5 text-[#60646c] focus:outline-none focus:ring-1 focus:ring-[#171717]'
 
   return (
@@ -94,12 +123,20 @@ export default function IssueList({ projectId, projectPrefix, initialIssues, mem
           )}
           <span className="text-sm text-[#999999]">{filtered.length}개</span>
         </div>
-        <Link
-          href={`/projects/${projectId}/issues/new`}
-          className="bg-[#000000] hover:bg-[#1a1a1a] text-white text-sm font-medium px-[18px] py-[10px] rounded-lg transition-colors shrink-0"
-        >
-          + 새 이슈
-        </Link>
+        <div className="flex items-center gap-2 shrink-0">
+          <button
+            onClick={handleExportCSV}
+            className="bg-white border border-[#dcdee0] hover:bg-[#fafafa] text-[#60646c] text-sm font-medium px-[14px] py-[9px] rounded-lg transition-colors"
+          >
+            CSV 내보내기
+          </button>
+          <Link
+            href={`/projects/${projectId}/issues/new`}
+            className="bg-[#000000] hover:bg-[#1a1a1a] text-white text-sm font-medium px-[18px] py-[10px] rounded-lg transition-colors"
+          >
+            + 새 이슈
+          </Link>
+        </div>
       </div>
 
       {filtered.length === 0 ? (
