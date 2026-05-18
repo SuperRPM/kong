@@ -238,7 +238,7 @@ function ActivityLog({ logs }) {
   )
 }
 
-export default function IssueDetailClient({ issue, members, projectId, initialComments, currentUserId, activityLogs, initialAttachments }) {
+export default function IssueDetailClient({ issue, members, projectId, initialComments, currentUserId, isAdmin, activityLogs, initialAttachments }) {
   const router = useRouter()
   const [editing, setEditing] = useState(false)
   const [deleteConfirm, setDeleteConfirm] = useState(false)
@@ -252,6 +252,7 @@ export default function IssueDetailClient({ issue, members, projectId, initialCo
     status: issue.status,
     priority: issue.priority,
     assignee_id: issue.assignee_id ?? '',
+    created_by: issue.created_by ?? '',
     category: issue.category ?? 'SL',
     planned_at: issue.planned_at ?? '',
     completed_at: issue.completed_at ?? '',
@@ -262,7 +263,7 @@ export default function IssueDetailClient({ issue, members, projectId, initialCo
     if (!form.title.trim()) return
     setLoading(true)
     const supabase = createClient()
-    const { error } = await supabase.from('issues').update({
+    const updates = {
       title: form.title.trim(),
       description: form.description.trim() || null,
       status: form.status,
@@ -271,7 +272,9 @@ export default function IssueDetailClient({ issue, members, projectId, initialCo
       category: form.category || null,
       planned_at: form.planned_at || null,
       completed_at: form.completed_at || null,
-    }).eq('id', issue.id)
+    }
+    if (isAdmin) updates.created_by = form.created_by || null
+    const { error } = await supabase.from('issues').update(updates).eq('id', issue.id)
     setLoading(false)
     if (!error) { setEditing(false); router.refresh() }
   }
@@ -372,14 +375,25 @@ export default function IssueDetailClient({ issue, members, projectId, initialCo
                     {members.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
                   </select>
                 </div>
+                {isAdmin && (
+                  <div>
+                    <label className={labelCls}>요청자</label>
+                    <select value={form.created_by} onChange={e => setForm(f => ({ ...f, created_by: e.target.value }))} className={selectCls}>
+                      <option value="">미지정</option>
+                      {members.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
+                    </select>
+                  </div>
+                )}
+              </div>
+              <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className={labelCls}>계획 완료일</label>
                   <input type="date" value={form.planned_at} onChange={e => setForm(f => ({ ...f, planned_at: e.target.value }))} className={inputCls} />
                 </div>
-              </div>
-              <div>
-                <label className={labelCls}>실제 완료일</label>
-                <input type="date" value={form.completed_at} onChange={e => setForm(f => ({ ...f, completed_at: e.target.value }))} className={inputCls} />
+                <div>
+                  <label className={labelCls}>실제 완료일</label>
+                  <input type="date" value={form.completed_at} onChange={e => setForm(f => ({ ...f, completed_at: e.target.value }))} className={inputCls} />
+                </div>
               </div>
               <div className="flex justify-end gap-2 pt-2">
                 <button type="button" onClick={() => setEditing(false)} className="text-sm font-medium text-[#60646c] hover:text-[#171717] px-4 py-2 transition-colors">취소</button>
