@@ -48,7 +48,7 @@ export default async function ProjectPage({ params }) {
             >
               주간 리포트
             </Link>
-            <ProjectActions projectId={id} projectName={project.name} />
+            <ProjectActions projectId={id} projectName={project.name} project={project} isAdmin={profile?.is_admin ?? false} />
           </div>
         </div>
         <ProjectViewClient
