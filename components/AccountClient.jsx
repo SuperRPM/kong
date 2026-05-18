@@ -104,7 +104,7 @@ export default function AccountClient({ profile, email }) {
               type="text"
               value={name}
               onChange={e => setName(e.target.value)}
-              className="w-full border border-[#dcdee0] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#0d74ce]"
+              className="w-full border border-[#dcdee0] rounded-lg px-3 py-2 text-sm text-[#171717] focus:outline-none focus:border-[#0d74ce]"
             />
           </div>
           {nameMsg && (
@@ -130,7 +130,7 @@ export default function AccountClient({ profile, email }) {
               type="password"
               value={oldPw}
               onChange={e => setOldPw(e.target.value)}
-              className="w-full border border-[#dcdee0] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#0d74ce]"
+              className="w-full border border-[#dcdee0] rounded-lg px-3 py-2 text-sm text-[#171717] focus:outline-none focus:border-[#0d74ce]"
             />
           </div>
           <div>
@@ -139,7 +139,7 @@ export default function AccountClient({ profile, email }) {
               type="password"
               value={newPw}
               onChange={e => setNewPw(e.target.value)}
-              className="w-full border border-[#dcdee0] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#0d74ce]"
+              className="w-full border border-[#dcdee0] rounded-lg px-3 py-2 text-sm text-[#171717] focus:outline-none focus:border-[#0d74ce]"
             />
           </div>
           <div>
@@ -148,7 +148,7 @@ export default function AccountClient({ profile, email }) {
               type="password"
               value={confirmPw}
               onChange={e => setConfirmPw(e.target.value)}
-              className="w-full border border-[#dcdee0] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#0d74ce]"
+              className="w-full border border-[#dcdee0] rounded-lg px-3 py-2 text-sm text-[#171717] focus:outline-none focus:border-[#0d74ce]"
             />
           </div>
           {pwMsg && (
@@ -177,7 +177,7 @@ export default function AccountClient({ profile, email }) {
               type="text"
               value={deleteConfirm}
               onChange={e => setDeleteConfirm(e.target.value)}
-              className="w-full border border-[#dcdee0] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#ef4444]"
+              className="w-full border border-[#dcdee0] rounded-lg px-3 py-2 text-sm text-[#171717] focus:outline-none focus:border-[#ef4444]"
             />
           </div>
           {deleteMsg && (
