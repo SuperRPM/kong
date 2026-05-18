@@ -1,6 +1,7 @@
 'use client'
 
-import { useState } from 'react'
+import { Suspense } from 'react'
+import { useSearchParams, useRouter } from 'next/navigation'
 import IssueList from './IssueList'
 import ProjectStats from './ProjectStats'
 import KanbanBoard from './KanbanBoard'
@@ -11,8 +12,16 @@ const VIEWS = [
   { key: 'stats', label: '통계' },
 ]
 
-export default function ProjectViewClient({ projectId, projectPrefix, initialIssues, members }) {
-  const [view, setView] = useState('list')
+function ViewContent({ projectId, projectPrefix, initialIssues, members }) {
+  const searchParams = useSearchParams()
+  const router = useRouter()
+  const view = searchParams.get('view') ?? 'list'
+
+  function setView(key) {
+    const params = new URLSearchParams(searchParams.toString())
+    params.set('view', key)
+    router.replace(`?${params.toString()}`)
+  }
 
   return (
     <>
@@ -51,5 +60,18 @@ export default function ProjectViewClient({ projectId, projectPrefix, initialIss
         <ProjectStats issues={initialIssues} />
       )}
     </>
+  )
+}
+
+export default function ProjectViewClient({ projectId, projectPrefix, initialIssues, members }) {
+  return (
+    <Suspense fallback={null}>
+      <ViewContent
+        projectId={projectId}
+        projectPrefix={projectPrefix}
+        initialIssues={initialIssues}
+        members={members}
+      />
+    </Suspense>
   )
 }
