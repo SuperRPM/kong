@@ -1,10 +1,11 @@
 'use client'
 
-import { Suspense } from 'react'
+import { Suspense, useRef } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import IssueList from './IssueList'
 import ProjectStats from './ProjectStats'
 import KanbanBoard from './KanbanBoard'
+import KeyboardShortcuts from './KeyboardShortcuts'
 
 const VIEWS = [
   { key: 'list', label: '목록' },
@@ -16,6 +17,7 @@ function ViewContent({ projectId, projectPrefix, initialIssues, members }) {
   const searchParams = useSearchParams()
   const router = useRouter()
   const view = searchParams.get('view') ?? 'list'
+  const searchInputRef = useRef(null)
 
   function setView(key) {
     const params = new URLSearchParams(searchParams.toString())
@@ -25,6 +27,8 @@ function ViewContent({ projectId, projectPrefix, initialIssues, members }) {
 
   return (
     <>
+      <KeyboardShortcuts projectId={projectId} searchInputRef={searchInputRef} />
+
       <div className="flex items-center gap-1 mb-5">
         {VIEWS.map(v => (
           <button
@@ -47,6 +51,7 @@ function ViewContent({ projectId, projectPrefix, initialIssues, members }) {
           projectPrefix={projectPrefix}
           initialIssues={initialIssues}
           members={members}
+          searchInputRef={searchInputRef}
         />
       )}
       {view === 'kanban' && (

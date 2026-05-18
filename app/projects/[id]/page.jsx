@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { notFound, redirect } from 'next/navigation'
+import Link from 'next/link'
 import Navbar from '@/components/Navbar'
 import ProjectActions from '@/components/ProjectActions'
 import ProjectViewClient from '@/components/ProjectViewClient'
@@ -40,7 +41,15 @@ export default async function ProjectPage({ params }) {
               <p className="text-sm text-[#60646c]">{project.description}</p>
             )}
           </div>
-          <ProjectActions projectId={id} projectName={project.name} />
+          <div className="flex items-center gap-3">
+            <Link
+              href={`/projects/${id}/report`}
+              className="text-sm font-medium text-[#60646c] hover:text-[#171717] transition-colors"
+            >
+              주간 리포트
+            </Link>
+            <ProjectActions projectId={id} projectName={project.name} />
+          </div>
         </div>
         <ProjectViewClient
           projectId={id}
