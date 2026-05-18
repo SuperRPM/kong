@@ -37,7 +37,7 @@ export default function Navbar({ user }) {
       )}
       <div className="ml-auto flex items-center gap-3">
         <NotificationBell />
-        <span className="text-sm text-[#999999]">{user?.name}</span>
+        <Link href="/account" className="text-sm text-[#999999] hover:text-[#171717] transition-colors">{user?.name}</Link>
         <button
           onClick={handleLogout}
           className="text-sm font-medium text-[#60646c] hover:text-[#171717] transition-colors"
