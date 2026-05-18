@@ -31,7 +31,7 @@ export default async function ProjectPage({ params }) {
     <div className="min-h-screen bg-white">
       <Navbar user={profile} />
       <main className="max-w-7xl mx-auto px-6 py-8">
-        <div className="flex items-start justify-between mb-6">
+        <div className="flex flex-col sm:flex-row sm:items-start justify-between mb-6 gap-3">
           <div>
             <div className="flex items-center gap-2 mb-1">
               <h1 className="text-xl font-semibold text-[#171717]">{project.name}</h1>
@@ -41,7 +41,7 @@ export default async function ProjectPage({ params }) {
               <p className="text-sm text-[#60646c]">{project.description}</p>
             )}
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 shrink-0">
             <Link
               href={`/projects/${id}/report`}
               className="text-sm font-medium text-[#60646c] hover:text-[#171717] transition-colors"
