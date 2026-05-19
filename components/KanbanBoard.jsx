@@ -40,8 +40,10 @@ export default function KanbanBoard({ projectId, projectPrefix, initialIssues })
     if (!issue || issue.status === newStatus) return
 
     const updates = { status: newStatus }
-    if (newStatus === 'done' && !issue.completed_at) {
+    if (newStatus === 'done') {
       updates.completed_at = new Date().toISOString().split('T')[0]
+    } else if (issue.status === 'done') {
+      updates.completed_at = null
     }
 
     setIssues(prev => prev.map(i => i.id === issueId ? { ...i, ...updates } : i))

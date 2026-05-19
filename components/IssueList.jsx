@@ -127,8 +127,10 @@ export default function IssueList({ projectId, projectPrefix, initialIssues, mem
   async function handleStatusChange(issue, newStatus) {
     const supabase = createClient()
     const updates = { status: newStatus }
-    if (newStatus === 'done' && !issue.completed_at) {
+    if (newStatus === 'done') {
       updates.completed_at = new Date().toISOString().split('T')[0]
+    } else if (issue.status === 'done') {
+      updates.completed_at = null
     }
     const { data } = await supabase
       .from('issues').update(updates).eq('id', issue.id)
