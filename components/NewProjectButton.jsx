@@ -13,6 +13,7 @@ export default function NewProjectButton() {
   const [name, setName] = useState('')
   const [prefix, setPrefix] = useState('REQ')
   const [description, setDescription] = useState('')
+  const [isPrivate, setIsPrivate] = useState(false)
   const [loading, setLoading] = useState(false)
 
   async function handleCreate(e) {
@@ -27,6 +28,7 @@ export default function NewProjectButton() {
         name: name.trim(),
         prefix: prefix.trim().toUpperCase() || 'REQ',
         description: description.trim() || null,
+        is_private: isPrivate,
         created_by: user.id,
       })
       .select('id')
@@ -41,6 +43,7 @@ export default function NewProjectButton() {
       setName('')
       setPrefix('REQ')
       setDescription('')
+      setIsPrivate(false)
       router.push(`/projects/${data.id}`)
       router.refresh()
     }
@@ -93,6 +96,18 @@ export default function NewProjectButton() {
                   rows={3}
                   className={`${inputCls} resize-none`}
                 />
+              </div>
+              <div className="flex items-center gap-3">
+                <input
+                  type="checkbox"
+                  id="new_is_private"
+                  checked={isPrivate}
+                  onChange={e => setIsPrivate(e.target.checked)}
+                  className="rounded border-[#dcdee0] cursor-pointer"
+                />
+                <label htmlFor="new_is_private" className="text-sm text-[#171717] cursor-pointer select-none">
+                  비공개 프로젝트 <span className="text-[#999999]">(멤버와 관리자만 접근)</span>
+                </label>
               </div>
               <div className="flex justify-end gap-2 pt-2">
                 <button type="button" onClick={() => setOpen(false)} className="text-sm font-medium text-[#60646c] hover:text-[#171717] px-4 py-2 transition-colors">취소</button>
