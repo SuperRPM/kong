@@ -7,16 +7,44 @@ import { createClient } from '@/lib/supabase/client'
 const inputCls = 'w-full bg-white border border-[#dcdee0] rounded-lg px-4 py-2.5 text-sm text-[#171717] focus:outline-none focus:ring-2 focus:ring-[#171717] placeholder:text-[#999999]'
 const labelCls = 'block text-sm font-medium text-[#171717] mb-1'
 
-export default function ProjectActions({ projectId, projectName, project, isAdmin }) {
+export default function ProjectActions({ projectId, projectName, project, isAdmin, projectMembers = [], allMembers = [] }) {
   const router = useRouter()
   const [confirm, setConfirm] = useState(false)
   const [editing, setEditing] = useState(false)
+  const [managingMembers, setManagingMembers] = useState(false)
+  const [members, setMembers] = useState(projectMembers)
+  const [addUserId, setAddUserId] = useState('')
+  const [memberLoading, setMemberLoading] = useState(false)
   const [editForm, setEditForm] = useState({
     name: project?.name ?? '',
     description: project?.description ?? '',
     prefix: project?.prefix ?? '',
   })
   const [editLoading, setEditLoading] = useState(false)
+
+  const memberIds = new Set(members.map(m => m.id))
+  const addableMembers = allMembers.filter(m => !memberIds.has(m.id))
+
+  async function handleAddMember() {
+    if (!addUserId) return
+    setMemberLoading(true)
+    const supabase = createClient()
+    const { error } = await supabase.from('project_members').insert({ project_id: projectId, user_id: addUserId })
+    if (!error) {
+      const added = allMembers.find(m => m.id === addUserId)
+      if (added) setMembers(prev => [...prev, added].sort((a, b) => a.name.localeCompare(b.name)))
+      setAddUserId('')
+    }
+    setMemberLoading(false)
+  }
+
+  async function handleRemoveMember(userId) {
+    setMemberLoading(true)
+    const supabase = createClient()
+    const { error } = await supabase.from('project_members').delete().eq('project_id', projectId).eq('user_id', userId)
+    if (!error) setMembers(prev => prev.filter(m => m.id !== userId))
+    setMemberLoading(false)
+  }
 
   async function handleEdit(e) {
     e.preventDefault()
@@ -44,12 +72,20 @@ export default function ProjectActions({ projectId, projectName, project, isAdmi
     <>
       <div className="flex items-center gap-3">
         {isAdmin && (
-          <button
-            onClick={() => setEditing(true)}
-            className="text-sm font-medium text-[#60646c] hover:text-[#171717] transition-colors shrink-0"
-          >
-            프로젝트 수정
-          </button>
+          <>
+            <button
+              onClick={() => setManagingMembers(true)}
+              className="text-sm font-medium text-[#60646c] hover:text-[#171717] transition-colors shrink-0"
+            >
+              멤버 관리
+            </button>
+            <button
+              onClick={() => setEditing(true)}
+              className="text-sm font-medium text-[#60646c] hover:text-[#171717] transition-colors shrink-0"
+            >
+              프로젝트 수정
+            </button>
+          </>
         )}
         <button
           onClick={() => setConfirm(true)}
@@ -58,6 +94,61 @@ export default function ProjectActions({ projectId, projectName, project, isAdmi
           프로젝트 삭제
         </button>
       </div>
+
+      {managingMembers && (
+        <div className="fixed inset-0 bg-black/20 flex items-center justify-center z-50">
+          <div className="bg-white border border-[#dcdee0] rounded-xl shadow-lg p-6 w-full max-w-md mx-4">
+            <h2 className="text-lg font-semibold text-[#171717] mb-5">멤버 관리</h2>
+            <div className="mb-4">
+              {members.length === 0 ? (
+                <p className="text-sm text-[#999999]">참여 중인 멤버가 없습니다.</p>
+              ) : (
+                <ul className="divide-y divide-[#f0f0f3]">
+                  {members.map(m => (
+                    <li key={m.id} className="flex items-center justify-between py-2.5">
+                      <span className="text-sm text-[#171717]">{m.name}</span>
+                      <button
+                        onClick={() => handleRemoveMember(m.id)}
+                        disabled={memberLoading}
+                        className="text-xs text-[#999999] hover:text-[#ef4444] transition-colors disabled:opacity-40"
+                      >
+                        제거
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+            {addableMembers.length > 0 && (
+              <div className="flex gap-2 pt-2 border-t border-[#f0f0f3]">
+                <select
+                  value={addUserId}
+                  onChange={e => setAddUserId(e.target.value)}
+                  className="flex-1 bg-white border border-[#dcdee0] rounded-lg px-3 py-2 text-sm text-[#171717] focus:outline-none focus:ring-2 focus:ring-[#171717]"
+                >
+                  <option value="">멤버 선택...</option>
+                  {addableMembers.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
+                </select>
+                <button
+                  onClick={handleAddMember}
+                  disabled={!addUserId || memberLoading}
+                  className="bg-[#000000] hover:bg-[#1a1a1a] disabled:bg-[#cccccc] text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+                >
+                  추가
+                </button>
+              </div>
+            )}
+            <div className="flex justify-end mt-4">
+              <button
+                onClick={() => { setManagingMembers(false); router.refresh() }}
+                className="text-sm font-medium text-[#60646c] hover:text-[#171717] px-4 py-2 transition-colors"
+              >
+                닫기
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {editing && (
         <div className="fixed inset-0 bg-black/20 flex items-center justify-center z-50">

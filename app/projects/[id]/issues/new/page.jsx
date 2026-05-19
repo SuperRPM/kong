@@ -10,13 +10,16 @@ export default async function NewIssuePage({ params }) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  const [{ data: profile }, { data: project }, { data: members }] = await Promise.all([
+  const [{ data: profile }, { data: project }, { data: membersRaw }] = await Promise.all([
     supabase.from('profiles').select('name').eq('id', user.id).single(),
     supabase.from('projects').select('id, name, prefix').eq('id', projectId).single(),
-    supabase.from('profiles').select('id, name').order('name'),
+    supabase.from('project_members').select('profile:user_id(id, name)').eq('project_id', projectId),
   ])
 
   if (!project) redirect('/projects')
+
+  const members = (membersRaw ?? []).map(m => m.profile).filter(Boolean)
+    .sort((a, b) => a.name.localeCompare(b.name))
 
   return (
     <div className="min-h-screen bg-white">

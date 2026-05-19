@@ -11,7 +11,7 @@ export default async function ProjectPage({ params }) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  const [{ data: profile }, { data: project }, { data: issues }, { data: members }] =
+  const [{ data: profile }, { data: project }, { data: issues }, { data: membersRaw }, { data: allMembers }] =
     await Promise.all([
       supabase.from('profiles').select('name, is_admin').eq('id', user.id).single(),
       supabase.from('projects').select('id, name, description, prefix').eq('id', id).is('deleted_at', null).single(),
@@ -22,8 +22,12 @@ export default async function ProjectPage({ params }) {
         .is('deleted_at', null)
         .order('category', { ascending: true })
         .order('number', { ascending: true }),
-      supabase.from('profiles').select('id, name'),
+      supabase.from('project_members').select('profile:user_id(id, name)').eq('project_id', id),
+      supabase.from('profiles').select('id, name').order('name'),
     ])
+
+  const members = (membersRaw ?? []).map(m => m.profile).filter(Boolean)
+    .sort((a, b) => a.name.localeCompare(b.name))
 
   if (!project) notFound()
 
@@ -48,7 +52,7 @@ export default async function ProjectPage({ params }) {
             >
               주간 리포트
             </Link>
-            <ProjectActions projectId={id} projectName={project.name} project={project} isAdmin={profile?.is_admin ?? false} />
+            <ProjectActions projectId={id} projectName={project.name} project={project} isAdmin={profile?.is_admin ?? false} projectMembers={members} allMembers={allMembers ?? []} />
           </div>
         </div>
         <ProjectViewClient

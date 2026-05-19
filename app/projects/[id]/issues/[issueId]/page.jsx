@@ -10,14 +10,14 @@ export default async function IssuePage({ params }) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  const [{ data: profile }, { data: issue }, { data: members }, { data: comments }, { data: activityLogs }, { data: attachments }] = await Promise.all([
+  const [{ data: profile }, { data: issue }, { data: membersRaw }, { data: comments }, { data: activityLogs }, { data: attachments }] = await Promise.all([
     supabase.from('profiles').select('name, is_admin').eq('id', user.id).single(),
     supabase
       .from('issues')
       .select('id, title, description, status, priority, category, number, planned_at, completed_at, assignee_id, created_by, assignee:assignee_id(name), requester:created_by(name), project:project_id(id, name, prefix)')
       .eq('id', issueId)
       .single(),
-    supabase.from('profiles').select('id, name').order('name'),
+    supabase.from('project_members').select('profile:user_id(id, name)').eq('project_id', projectId),
     supabase
       .from('issue_comments')
       .select('id, body, created_at, author_id, author:author_id(name)')
@@ -38,6 +38,9 @@ export default async function IssuePage({ params }) {
   ])
 
   if (!issue) notFound()
+
+  const members = (membersRaw ?? []).map(m => m.profile).filter(Boolean)
+    .sort((a, b) => a.name.localeCompare(b.name))
 
   return (
     <div className="min-h-screen bg-white">
