@@ -10,14 +10,14 @@ export default async function IssuePage({ params }) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  const [{ data: profile }, { data: issue }, { data: membersRaw }, { data: comments }, { data: activityLogs }, { data: attachments }] = await Promise.all([
+  const [{ data: profile }, { data: issue }, { data: membersRaw }, { data: comments }, { data: activityLogs }, { data: attachments }, { data: categories }] = await Promise.all([
     supabase.from('profiles').select('name, is_admin').eq('id', user.id).single(),
     supabase
       .from('issues')
       .select('id, title, description, status, priority, category, number, planned_at, completed_at, assignee_id, created_by, assignee:assignee_id(name), requester:created_by(name), project:project_id(id, name, prefix)')
       .eq('id', issueId)
       .single(),
-    supabase.from('project_members').select('profile:user_id(id, name)').eq('project_id', projectId),
+    supabase.from('project_members').select('user_id, role, profile:user_id(id, name)').eq('project_id', projectId),
     supabase
       .from('issue_comments')
       .select('id, body, created_at, author_id, author:author_id(name)')
@@ -35,12 +35,15 @@ export default async function IssuePage({ params }) {
       .select('id, file_path, file_name, file_size, uploaded_by, created_at')
       .eq('issue_id', issueId)
       .order('created_at', { ascending: true }),
+    supabase.from('project_categories').select('id, value, label, sort_order').eq('project_id', projectId).order('sort_order'),
   ])
 
   if (!issue) notFound()
 
-  const members = (membersRaw ?? []).map(m => m.profile).filter(Boolean)
+  const members = (membersRaw ?? []).map(m => ({ ...m.profile, role: m.role })).filter(m => m.id)
     .sort((a, b) => a.name.localeCompare(b.name))
+  const isProjectAdmin = (membersRaw ?? []).some(m => m.user_id === user.id && m.role === 'admin')
+  const canManage = (profile?.is_admin ?? false) || isProjectAdmin
 
   return (
     <div className="min-h-screen bg-white">
@@ -51,11 +54,12 @@ export default async function IssuePage({ params }) {
         </Link>
         <IssueDetailClient
           issue={issue}
-          members={members ?? []}
+          members={members}
           projectId={projectId}
           initialComments={comments ?? []}
           currentUserId={user.id}
-          isAdmin={profile?.is_admin ?? false}
+          isAdmin={canManage}
+          categories={categories ?? []}
           activityLogs={activityLogs ?? []}
           initialAttachments={attachments ?? []}
         />

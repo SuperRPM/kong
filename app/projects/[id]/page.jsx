@@ -11,10 +11,10 @@ export default async function ProjectPage({ params }) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  const [{ data: profile }, { data: project }, { data: issues }, { data: membersRaw }, { data: allMembers }] =
+  const [{ data: profile }, { data: project }, { data: issues }, { data: membersRaw }, { data: allMembers }, { data: categories }] =
     await Promise.all([
       supabase.from('profiles').select('name, is_admin').eq('id', user.id).single(),
-      supabase.from('projects').select('id, name, description, prefix').eq('id', id).is('deleted_at', null).single(),
+      supabase.from('projects').select('id, name, description, prefix, is_private').eq('id', id).is('deleted_at', null).single(),
       supabase
         .from('issues')
         .select('id, title, status, priority, category, number, planned_at, completed_at, assignee_id, assignee:assignee_id(name), requester:created_by(name)')
@@ -22,12 +22,18 @@ export default async function ProjectPage({ params }) {
         .is('deleted_at', null)
         .order('category', { ascending: true })
         .order('number', { ascending: true }),
-      supabase.from('project_members').select('profile:user_id(id, name)').eq('project_id', id),
+      supabase.from('project_members').select('user_id, role, profile:user_id(id, name)').eq('project_id', id),
       supabase.from('profiles').select('id, name').order('name'),
+      supabase.from('project_categories').select('id, value, label, sort_order').eq('project_id', id).order('sort_order'),
     ])
 
-  const members = (membersRaw ?? []).map(m => m.profile).filter(Boolean)
+  const membersWithRole = (membersRaw ?? [])
+    .map(m => ({ ...m.profile, role: m.role, user_id: m.user_id }))
+    .filter(m => m.id)
     .sort((a, b) => a.name.localeCompare(b.name))
+  const members = membersWithRole.map(({ id, name }) => ({ id, name }))
+  const isProjectAdmin = (membersRaw ?? []).some(m => m.user_id === user.id && m.role === 'admin')
+  const canManage = (profile?.is_admin ?? false) || isProjectAdmin
 
   if (!project) notFound()
 
@@ -52,7 +58,7 @@ export default async function ProjectPage({ params }) {
             >
               주간 리포트
             </Link>
-            <ProjectActions projectId={id} projectName={project.name} project={project} isAdmin={profile?.is_admin ?? false} projectMembers={members} allMembers={allMembers ?? []} />
+            <ProjectActions projectId={id} projectName={project.name} project={project} canManage={canManage} projectMembers={membersWithRole} allMembers={allMembers ?? []} categories={categories ?? []} />
           </div>
         </div>
         <ProjectViewClient

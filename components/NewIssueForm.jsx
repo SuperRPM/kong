@@ -5,22 +5,16 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { STATUS_OPTIONS, PRIORITY_OPTIONS } from './StatusBadge'
 
-const CATEGORY_OPTIONS = [
-  { value: 'SL', label: 'SL — 세일즈' },
-  { value: 'CS', label: 'CS — CS팀' },
-  { value: 'CM', label: 'CM — 공통' },
-]
-
 const inputCls = 'w-full bg-white border border-[#dcdee0] rounded-lg px-4 py-2.5 text-sm text-[#171717] focus:outline-none focus:ring-2 focus:ring-[#171717] placeholder:text-[#999999]'
 const selectCls = 'w-full bg-white border border-[#dcdee0] rounded-lg px-4 py-2.5 text-sm text-[#171717] focus:outline-none focus:ring-2 focus:ring-[#171717]'
 const labelCls = 'block text-sm font-medium text-[#171717] mb-1'
 
-export default function NewIssueForm({ projectId, projectPrefix, members }) {
+export default function NewIssueForm({ projectId, projectPrefix, members, categories = [] }) {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [form, setForm] = useState({
     title: '', description: '', status: 'todo', priority: 'medium',
-    assignee_id: '', category: 'SL', planned_at: '', completed_at: '',
+    assignee_id: '', category: categories[0]?.value ?? '', planned_at: '', completed_at: '',
   })
 
   async function handleSubmit(e) {
@@ -57,9 +51,10 @@ export default function NewIssueForm({ projectId, projectPrefix, members }) {
         <div>
           <label className={labelCls}>카테고리</label>
           <select value={form.category} onChange={e => setForm(f => ({ ...f, category: e.target.value }))} className={selectCls}>
-            {CATEGORY_OPTIONS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+            <option value="">없음</option>
+            {categories.map(opt => <option key={opt.value} value={opt.value}>{opt.value} — {opt.label}</option>)}
           </select>
-          <p className="text-xs text-[#999999] mt-1 font-mono">{projectPrefix}-{form.category}-###</p>
+          {form.category && <p className="text-xs text-[#999999] mt-1 font-mono">{projectPrefix}-{form.category}-###</p>}
         </div>
         <div>
           <label className={labelCls}>제목 *</label>

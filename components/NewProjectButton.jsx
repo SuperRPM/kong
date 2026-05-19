@@ -31,6 +31,10 @@ export default function NewProjectButton() {
       })
       .select('id')
       .single()
+    if (!error && data) {
+      // 생성자를 project admin으로 등록
+      await supabase.from('project_members').insert({ project_id: data.id, user_id: user.id, role: 'admin' })
+    }
     setLoading(false)
     if (!error && data) {
       setOpen(false)

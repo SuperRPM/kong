@@ -18,7 +18,7 @@ export default async function ProjectsPage() {
   const [{ data: projects }, { data: issueCounts }] = await Promise.all([
     supabase
       .from('projects')
-      .select('id, name, description, created_at')
+      .select('id, name, description, is_private, created_at')
       .is('deleted_at', null)
       .order('created_at', { ascending: false }),
     supabase
@@ -54,7 +54,12 @@ export default async function ProjectsPage() {
                     href={`/projects/${project.id}`}
                     className="block bg-white border border-[#dcdee0] rounded-xl p-5 hover:shadow-sm transition-shadow"
                   >
-                    <p className="font-semibold text-[#171717]">{project.name}</p>
+                    <div className="flex items-center gap-2">
+                      <p className="font-semibold text-[#171717]">{project.name}</p>
+                      {project.is_private && (
+                        <span className="text-[10px] font-semibold bg-[#f0f0f3] text-[#60646c] px-1.5 py-0.5 rounded uppercase tracking-wide">비공개</span>
+                      )}
+                    </div>
                     {project.description && (
                       <p className="text-sm text-[#60646c] mt-1">{project.description}</p>
                     )}

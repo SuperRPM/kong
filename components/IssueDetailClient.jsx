@@ -7,12 +7,6 @@ import { StatusBadge, PriorityBadge, STATUS_OPTIONS, PRIORITY_OPTIONS } from './
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL
 
-const CATEGORY_OPTIONS = [
-  { value: 'SL', label: 'SL — 세일즈' },
-  { value: 'CS', label: 'CS — CS팀' },
-  { value: 'CM', label: 'CM — 공통' },
-]
-
 const inputCls = 'w-full bg-white border border-[#dcdee0] rounded-lg px-4 py-2.5 text-sm text-[#171717] focus:outline-none focus:ring-2 focus:ring-[#171717] placeholder:text-[#999999]'
 const selectCls = 'w-full bg-white border border-[#dcdee0] rounded-lg px-4 py-2.5 text-sm text-[#171717] focus:outline-none focus:ring-2 focus:ring-[#171717]'
 const labelCls = 'block text-sm font-medium text-[#171717] mb-1'
@@ -238,7 +232,7 @@ function ActivityLog({ logs }) {
   )
 }
 
-export default function IssueDetailClient({ issue, members, projectId, initialComments, currentUserId, isAdmin, activityLogs, initialAttachments }) {
+export default function IssueDetailClient({ issue, members, projectId, initialComments, currentUserId, isAdmin, categories = [], activityLogs, initialAttachments }) {
   const router = useRouter()
   const [editing, setEditing] = useState(false)
   const [deleteConfirm, setDeleteConfirm] = useState(false)
@@ -341,7 +335,8 @@ export default function IssueDetailClient({ issue, members, projectId, initialCo
                 <div>
                   <label className={labelCls}>카테고리</label>
                   <select value={form.category} onChange={e => setForm(f => ({ ...f, category: e.target.value }))} className={selectCls}>
-                    {CATEGORY_OPTIONS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+                    <option value="">없음</option>
+                    {categories.map(opt => <option key={opt.value} value={opt.value}>{opt.value} — {opt.label}</option>)}
                   </select>
                 </div>
                 <div>
