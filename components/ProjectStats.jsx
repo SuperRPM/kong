@@ -3,8 +3,6 @@
 import { useMemo } from 'react'
 import { STATUS_OPTIONS } from './StatusBadge'
 
-const CATEGORY_LABELS = { SL: 'SL — 세일즈', CS: 'CS — CS팀', CM: 'CM — 공통' }
-
 const STATUS_COLORS = {
   todo: 'bg-[#aaaaaa]',
   in_progress: 'bg-[#0d74ce]',
@@ -41,8 +39,9 @@ function SummaryCard({ label, value, sub }) {
   )
 }
 
-export default function ProjectStats({ issues }) {
+export default function ProjectStats({ issues, categories = [] }) {
   const stats = useMemo(() => {
+    const categoryLabelMap = Object.fromEntries(categories.map(c => [c.value, `${c.value} — ${c.label}`]))
     const total = issues.length
     const today = new Date().toISOString().split('T')[0]
 
@@ -55,9 +54,9 @@ export default function ProjectStats({ issues }) {
     const inProgress = byStatus.find(s => s.value === 'in_progress')?.count ?? 0
     const overdue = issues.filter(i => i.planned_at && i.planned_at < today && i.status !== 'done').length
 
-    const categories = [...new Set(issues.map(i => i.category).filter(Boolean))].sort()
-    const byCategory = categories.map(cat => ({
-      label: CATEGORY_LABELS[cat] ?? cat,
+    const usedCats = [...new Set(issues.map(i => i.category).filter(Boolean))].sort()
+    const byCategory = usedCats.map(cat => ({
+      label: categoryLabelMap[cat] ?? cat,
       count: issues.filter(i => i.category === cat).length,
     }))
 
@@ -71,7 +70,7 @@ export default function ProjectStats({ issues }) {
       .map(([label, count]) => ({ label, count }))
 
     return { total, done, inProgress, overdue, byStatus, byCategory, byAssignee }
-  }, [issues])
+  }, [issues, categories])
 
   const doneRate = stats.total > 0 ? Math.round((stats.done / stats.total) * 100) : 0
 

@@ -66,6 +66,7 @@ export default async function ProjectPage({ params }) {
           projectPrefix={project.prefix ?? 'REQ'}
           initialIssues={issues ?? []}
           members={members ?? []}
+          categories={categories ?? []}
         />
       </main>
     </div>
