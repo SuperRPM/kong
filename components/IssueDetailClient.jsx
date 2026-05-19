@@ -247,7 +247,7 @@ export default function IssueDetailClient({ issue, members, projectId, initialCo
     priority: issue.priority,
     assignee_id: issue.assignee_id ?? '',
     created_by: issue.created_by ?? '',
-    category: issue.category ?? 'SL',
+    category: issue.category ?? '',
     planned_at: issue.planned_at ?? '',
     completed_at: issue.completed_at ?? '',
   })
