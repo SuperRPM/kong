@@ -25,18 +25,24 @@ export default async function MembersPage() {
     )
   }
 
-  const { data: members } = await supabase
-    .from('profiles')
-    .select('id, name, email, is_admin, created_at')
-    .order('created_at', { ascending: true })
+  const [{ data: members }, { data: projects }, { data: projectMembers }] = await Promise.all([
+    supabase.from('profiles').select('id, name, email, is_admin, created_at').order('created_at', { ascending: true }),
+    supabase.from('projects').select('id, name').is('deleted_at', null).order('name'),
+    supabase.from('project_members').select('project_id, user_id, role'),
+  ])
 
   return (
     <div className="min-h-screen bg-white">
       <Navbar user={profile} />
-      <main className="max-w-2xl mx-auto px-6 py-8">
+      <main className="max-w-3xl mx-auto px-6 py-8">
         <h1 className="text-xl font-semibold text-[#171717] mb-1">멤버 관리</h1>
         <p className="text-sm text-[#999999] mb-8">팀원 목록 및 권한을 관리합니다.</p>
-        <MembersClient initialMembers={members ?? []} currentUserId={user.id} />
+        <MembersClient
+          initialMembers={members ?? []}
+          projects={projects ?? []}
+          initialProjectMembers={projectMembers ?? []}
+          currentUserId={user.id}
+        />
       </main>
     </div>
   )
