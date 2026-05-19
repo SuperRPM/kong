@@ -6,7 +6,7 @@ const STATUS = {
 }
 
 const PRIORITY = {
-  low:    { label: '낙음', color: 'bg-[#f0f0f3] text-[#999999]' },
+  low:    { label: '낮음', color: 'bg-[#f0f0f3] text-[#999999]' },
   medium: { label: '보통', color: 'bg-[#fef3c7] text-[#ab6400]' },
   high:   { label: '높음', color: 'bg-[#fef2f2] text-[#ef4444]' },
 }

@@ -138,7 +138,7 @@ export default function IssueList({ projectId, projectPrefix, initialIssues, mem
   }
 
   const STATUS_KO = { todo: '할 일', in_progress: '진행 중', review: '검토 대기', done: '완료' }
-  const PRIORITY_KO = { low: '낙음', medium: '보통', high: '높음' }
+  const PRIORITY_KO = { low: '낮음', medium: '보통', high: '높음' }
 
   function handleExportCSV() {
     const headers = ['ID', '제목', '상태', '우선순위', '카테고리', '담당자', '요청자', '계획완료일', '완료일']
