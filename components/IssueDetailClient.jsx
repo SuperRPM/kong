@@ -155,10 +155,60 @@ function ImagesSection({ issueId, initialAttachments, currentUserId }) {
   )
 }
 
-function CommentsSection({ issueId, initialComments, currentUserId }) {
+function renderCommentBody(text) {
+  return text.split(/(@[^\s@]+)/g).map((part, i) =>
+    part.startsWith('@')
+      ? <span key={i} className="text-[#0d74ce] font-medium">{part}</span>
+      : part
+  )
+}
+
+function CommentsSection({ issueId, initialComments, currentUserId, members = [] }) {
   const [comments, setComments] = useState(initialComments)
   const [body, setBody] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const [mention, setMention] = useState(null) // { query, start } | null
+  const [mentionIndex, setMentionIndex] = useState(0)
+  const textareaRef = useRef(null)
+
+  const mentionMatches = mention
+    ? members.filter(m => m.name.includes(mention.query)).slice(0, 6)
+    : []
+
+  function handleBodyChange(e) {
+    const val = e.target.value
+    setBody(val)
+    const before = val.slice(0, e.target.selectionStart)
+    const match = before.match(/@([^\s@]*)$/)
+    if (match) {
+      setMention({ query: match[1], start: match.index })
+      setMentionIndex(0)
+    } else {
+      setMention(null)
+    }
+  }
+
+  function insertMention(member) {
+    const cursor = textareaRef.current?.selectionStart ?? body.length
+    const before = body.slice(0, mention.start)
+    const after = body.slice(cursor)
+    const next = `${before}@${member.name} ${after}`
+    setBody(next)
+    setMention(null)
+    const pos = before.length + member.name.length + 2
+    setTimeout(() => {
+      textareaRef.current?.focus()
+      textareaRef.current?.setSelectionRange(pos, pos)
+    }, 0)
+  }
+
+  function handleKeyDown(e) {
+    if (!mention || mentionMatches.length === 0) return
+    if (e.key === 'ArrowDown') { e.preventDefault(); setMentionIndex(i => Math.min(i + 1, mentionMatches.length - 1)) }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); setMentionIndex(i => Math.max(i - 1, 0)) }
+    else if (e.key === 'Enter' || e.key === 'Tab') { e.preventDefault(); insertMention(mentionMatches[mentionIndex]) }
+    else if (e.key === 'Escape') setMention(null)
+  }
 
   async function handleSubmit(e) {
     e.preventDefault()
@@ -170,8 +220,24 @@ function CommentsSection({ issueId, initialComments, currentUserId }) {
       .insert({ issue_id: issueId, author_id: currentUserId, body: body.trim() })
       .select('id, body, created_at, author_id, author:author_id(name)')
       .single()
+    if (!error && data) {
+      setComments(c => [...c, data])
+      // 멘션된 사용자에게 알림 전송
+      const mentionedNames = [...body.matchAll(/@([^\s@]+)/g)].map(m => m[1])
+      const targets = members.filter(m => mentionedNames.includes(m.name) && m.id !== currentUserId)
+      if (targets.length > 0) {
+        await supabase.from('notifications').insert(
+          targets.map(m => ({
+            recipient_id: m.id,
+            issue_id: issueId,
+            type: 'mention',
+            message: `댓글에서 회원님이 멘션되었습니다.`,
+          }))
+        )
+      }
+      setBody('')
+    }
     setSubmitting(false)
-    if (!error && data) { setComments(c => [...c, data]); setBody('') }
   }
 
   async function handleDelete(commentId) {
@@ -198,13 +264,39 @@ function CommentsSection({ issueId, initialComments, currentUserId }) {
                   )}
                 </div>
               </div>
-              <p className="text-sm text-[#171717] whitespace-pre-wrap leading-relaxed">{c.body}</p>
+              <p className="text-sm text-[#171717] whitespace-pre-wrap leading-relaxed">{renderCommentBody(c.body)}</p>
             </div>
           ))}
         </div>
       )}
       <form onSubmit={handleSubmit} className="space-y-2">
-        <textarea value={body} onChange={e => setBody(e.target.value)} placeholder="댓글을 입력하세요..." rows={3} className={`${inputCls} resize-none`} />
+        <div className="relative">
+          <textarea
+            ref={textareaRef}
+            value={body}
+            onChange={handleBodyChange}
+            onKeyDown={handleKeyDown}
+            placeholder="댓글을 입력하세요... (@이름으로 멘션)"
+            rows={3}
+            className={`${inputCls} resize-none`}
+          />
+          {mention && mentionMatches.length > 0 && (
+            <div className="absolute bottom-full left-0 mb-1 w-44 bg-white border border-[#dcdee0] rounded-lg shadow-lg overflow-hidden z-10">
+              {mentionMatches.map((m, i) => (
+                <button
+                  key={m.id}
+                  type="button"
+                  onMouseDown={e => { e.preventDefault(); insertMention(m) }}
+                  className={`w-full text-left px-3 py-2 text-sm transition-colors ${
+                    i === mentionIndex ? 'bg-[#f0f0f3] text-[#171717]' : 'text-[#60646c] hover:bg-[#fafafa]'
+                  }`}
+                >
+                  {m.name}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
         <div className="flex justify-end">
           <button type="submit" disabled={submitting || !body.trim()} className="bg-[#000000] hover:bg-[#1a1a1a] disabled:bg-[#cccccc] text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors">
             {submitting ? '등록 중...' : '댓글 등록'}
@@ -323,7 +415,7 @@ export default function IssueDetailClient({ issue, members, projectId, initialCo
       </div>
 
       <ImagesSection issueId={issue.id} initialAttachments={initialAttachments} currentUserId={currentUserId} />
-      <CommentsSection issueId={issue.id} initialComments={initialComments} currentUserId={currentUserId} />
+      <CommentsSection issueId={issue.id} initialComments={initialComments} currentUserId={currentUserId} members={members} />
       <ActivityLog logs={activityLogs} />
 
       {editing && (

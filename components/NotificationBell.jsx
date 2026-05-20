@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef, useCallback } from 'react'
+import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 
 function relativeTime(dateStr) {
@@ -11,8 +12,14 @@ function relativeTime(dateStr) {
   return `${Math.floor(diff / 86400)}일 전`
 }
 
+function showBrowserNotification(message) {
+  if (typeof window === 'undefined' || Notification.permission !== 'granted') return
+  new Notification('Kong', { body: message, icon: '/favicon.ico' })
+}
+
 export default function NotificationBell() {
   const supabase = createClient()
+  const router = useRouter()
   const [open, setOpen] = useState(false)
   const [notifications, setNotifications] = useState([])
   const [unreadCount, setUnreadCount] = useState(0)
@@ -41,6 +48,25 @@ export default function NotificationBell() {
   useEffect(() => { fetchNotifications() }, [fetchNotifications])
 
   useEffect(() => {
+    if (!userId) return
+    const channel = supabase
+      .channel(`notifications:${userId}`)
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'notifications',
+        filter: `recipient_id=eq.${userId}`,
+      }, (payload) => {
+        const n = payload.new
+        setNotifications(prev => [n, ...prev].slice(0, 20))
+        setUnreadCount(prev => prev + 1)
+        showBrowserNotification(n.message)
+      })
+      .subscribe()
+    return () => supabase.removeChannel(channel)
+  }, [userId])
+
+  useEffect(() => {
     if (!open) return
     function handleOutside(e) {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target)) setOpen(false)
@@ -57,6 +83,19 @@ export default function NotificationBell() {
       setUnreadCount(prev => Math.max(0, prev - 1))
     }
     setOpen(false)
+    if (notification.issue_id) {
+      router.push(`/issues/${notification.issue_id}`)
+    }
+  }
+
+  async function handleDelete(e, notificationId) {
+    e.stopPropagation()
+    await supabase.from('notifications').delete().eq('id', notificationId)
+    setNotifications(prev => {
+      const next = prev.filter(n => n.id !== notificationId)
+      setUnreadCount(next.filter(n => !n.read_at).length)
+      return next
+    })
   }
 
   async function markAllRead() {
@@ -67,10 +106,22 @@ export default function NotificationBell() {
     setUnreadCount(0)
   }
 
+  async function deleteAll() {
+    if (!userId) return
+    await supabase.from('notifications').delete().eq('recipient_id', userId)
+    setNotifications([])
+    setUnreadCount(0)
+  }
+
   function toggle() {
     const next = !open
     setOpen(next)
-    if (next) fetchNotifications()
+    if (next) {
+      fetchNotifications()
+      if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'default') {
+        Notification.requestPermission()
+      }
+    }
   }
 
   return (
@@ -95,28 +146,48 @@ export default function NotificationBell() {
         <div className="absolute right-0 top-full mt-2 w-80 max-h-96 overflow-y-auto bg-white border border-[#dcdee0] rounded-xl shadow-lg z-50">
           <div className="flex items-center justify-between px-4 py-3 border-b border-[#f0f0f3]">
             <span className="text-sm font-semibold text-[#171717]">알림</span>
-            {unreadCount > 0 && (
-              <button onClick={markAllRead} className="text-xs text-[#60646c] hover:text-[#171717] transition-colors">모두 읽음</button>
-            )}
+            <div className="flex items-center gap-3">
+              {unreadCount > 0 && (
+                <button onClick={markAllRead} className="text-xs text-[#60646c] hover:text-[#171717] transition-colors">
+                  모두 읽음
+                </button>
+              )}
+              {notifications.length > 0 && (
+                <button onClick={deleteAll} className="text-xs text-[#999999] hover:text-[#ef4444] transition-colors">
+                  전체 삭제
+                </button>
+              )}
+            </div>
           </div>
           {notifications.length === 0 ? (
             <div className="px-4 py-8 text-center text-sm text-[#999999]">새로운 알림이 없습니다</div>
           ) : (
             <ul>
               {notifications.map(n => (
-                <li key={n.id}>
-                  <button
-                    onClick={() => handleClick(n)}
-                    className="w-full text-left px-4 py-3 hover:bg-[#fafafa] transition-colors border-b border-[#f0f0f3] last:border-0"
-                  >
-                    <div className="flex items-start gap-2">
-                      <span className={`mt-1.5 shrink-0 w-2 h-2 rounded-full ${n.read_at ? 'bg-transparent' : 'bg-[#0d74ce]'}`} />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm text-[#171717] break-words leading-snug">{n.message}</p>
-                        <p className="mt-0.5 text-xs text-[#999999]">{relativeTime(n.created_at)}</p>
+                <li key={n.id} className="group">
+                  <div className="flex items-start border-b border-[#f0f0f3] last:border-0">
+                    <button
+                      onClick={() => handleClick(n)}
+                      className="flex-1 text-left px-4 py-3 hover:bg-[#fafafa] transition-colors"
+                    >
+                      <div className="flex items-start gap-2">
+                        <span className={`mt-1.5 shrink-0 w-2 h-2 rounded-full ${n.read_at ? 'bg-transparent' : 'bg-[#0d74ce]'}`} />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm text-[#171717] break-words leading-snug">{n.message}</p>
+                          <p className="mt-0.5 text-xs text-[#999999]">{relativeTime(n.created_at)}</p>
+                        </div>
                       </div>
-                    </div>
-                  </button>
+                    </button>
+                    <button
+                      onClick={(e) => handleDelete(e, n.id)}
+                      className="shrink-0 px-3 py-3 text-[#cccccc] hover:text-[#ef4444] transition-colors opacity-0 group-hover:opacity-100"
+                      aria-label="삭제"
+                    >
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                        <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+                      </svg>
+                    </button>
+                  </div>
                 </li>
               ))}
             </ul>

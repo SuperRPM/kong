@@ -10,7 +10,7 @@
 - **Next.js 16.2.6** (App Router, JavaScript, Turbopack)
 - **Supabase** (PostgreSQL + Auth) — URL: `https://vkezarhccbxrmawkjvha.supabase.co`
 - **Tailwind CSS**
-- **Vercel** (배포 예정)
+- **Vercel** (배포 완료, 서울 리전)
 - `@supabase/ssr` 패키지 사용 (구버전 `auth-helpers` 아님)
 
 ## Next.js 16 주의사항
@@ -21,54 +21,99 @@
 ## 브랜치
 `claude/setup-project-management-UdsGI`
 
-## 완료된 작업
+## 권한 체계 (3단계)
+| 레벨 | 조건 | 가능한 작업 |
+|------|------|-------------|
+| 글로벌 관리자 | `profiles.is_admin = true` | 전체 관리자 기능, 휴지통, 멤버 관리 페이지 |
+| 프로젝트 관리자 | `project_members.role = 'admin'` | 해당 프로젝트 멤버/카테고리/설정 관리 |
+| 멤버 | `project_members.role = 'member'` | 이슈 CRUD, 댓글 |
 
-### 1. 프로젝트 초기화
-- Next.js 16 + Tailwind + ESLint 설치 완료
-- `@supabase/supabase-js`, `@supabase/ssr` 설치 완료
-- `.env.local` 생성 완료 (Supabase URL + publishable key 설정됨)
-- `.env.example` 작성 완료
-
-### 2. Supabase 스키마
-- `supabase/schema.sql` 작성 완료 — **Supabase 대시보드 SQL Editor에서 이미 실행 완료**
-- 테이블: `profiles`, `projects`, `issues`
-- RLS 정책 포함
-- `issues.updated_at` 자동 갱신 트리거 포함
-
-### 3. 인증 구조
-- `lib/supabase/client.js` — 브라우저용 Supabase 클라이언트
-- `lib/supabase/server.js` — 서버 컴포넌트용 Supabase 클라이언트
-- `proxy.js` — 미인증 사용자 `/login` 리다이렉트, 인증된 사용자 `/login·/signup` 접근 시 `/projects` 리다이렉트
-
-### 4. 구현된 페이지 및 컴포넌트
-| 파일 | 설명 |
-|------|------|
-| `app/login/page.jsx` | 이메일+비밀번호 로그인, `@mindwareworks.com` 도메인 검증 |
-| `app/signup/page.jsx` | 이름+이메일+비밀번호 가입, 도메인 검증, `profiles` 테이블 insert |
-| `app/projects/page.jsx` | 프로젝트 목록 (서버 컴포넌트) |
-| `app/projects/[id]/page.jsx` | 프로젝트 상세 + 이슈 목록 (서버 컴포넌트) |
-| `components/Navbar.jsx` | 상단 네비게이션, 로그아웃 버튼 |
-| `components/NewProjectButton.jsx` | 프로젝트 생성 모달 (클라이언트 컴포넌트) |
-| `components/IssueList.jsx` | 이슈 목록 + CRUD + 인라인 상태 변경 (클라이언트 컴포넌트) |
-| `components/StatusBadge.jsx` | 상태/우선순위 뱃지 + `STATUS_OPTIONS`, `PRIORITY_OPTIONS` export |
-
-### 5. 이슈 상태 / 우선순위
-- 상태: `todo`(할 일) | `in_progress`(진행 중) | `review`(검토 대기) | `done`(완료)
-- 우선순위: `low`(낮음) | `medium`(보통) | `high`(높음)
-
-### 6. 빌드 확인
-`npm run build` — 경고·에러 없이 통과 완료
+- `canManage = isAdmin || isProjectAdmin` — 프로젝트 수준 관리 권한 판단에 사용
+- 프로젝트 생성자는 자동으로 해당 프로젝트의 관리자(`role='admin'`)로 등록됨
 
 ## DB 스키마 요약
 ```sql
-profiles   (id UUID PK → auth.users, name TEXT, email TEXT, created_at)
-projects   (id UUID PK, name, description, created_by → profiles, created_at)
-issues     (id UUID PK, project_id → projects, title, description,
-            status CHECK(todo|in_progress|review|done),
-            priority CHECK(low|medium|high),
-            assignee_id → profiles, created_by → profiles,
-            created_at, updated_at)
+profiles        (id UUID PK → auth.users, name TEXT, email TEXT, is_admin BOOLEAN, created_at)
+
+projects        (id UUID PK, name, description, prefix TEXT,
+                 created_by → profiles, is_private BOOLEAN DEFAULT false,
+                 created_at, deleted_at)
+
+project_members (project_id → projects, user_id → profiles,
+                 role CHECK('member'|'admin'), created_at)
+                 PK: (project_id, user_id)
+
+project_categories (id UUID PK, project_id → projects,
+                    value TEXT, label TEXT, sort_order INT,
+                    created_at, UNIQUE(project_id, value))
+
+issues          (id UUID PK, project_id → projects,
+                 number INT, -- 프로젝트 내 자동 채번
+                 title, description,
+                 status CHECK(todo|in_progress|review|done),
+                 priority CHECK(low|medium|high),
+                 category TEXT, -- project_categories.value 참조
+                 assignee_id → profiles, created_by → profiles,
+                 completed_at DATE,
+                 created_at, updated_at, deleted_at)
+
+comments        (id UUID PK, issue_id → issues,
+                 user_id → profiles, content TEXT, created_at)
+
+issue_activities (id UUID PK, issue_id → issues,
+                  user_id → profiles, action TEXT, detail JSONB, created_at)
+
+notifications   (id UUID PK, user_id → profiles,
+                 issue_id → issues, type TEXT, message TEXT,
+                 is_read BOOLEAN, created_at)
 ```
+
+## 마이그레이션 현황
+| 파일 | 내용 |
+|------|------|
+| `supabase/schema.sql` | 초기 스키마 (profiles, projects, issues, RLS) |
+| `supabase/migrations/001~012` | 채번, 휴지통, 댓글, 활동로그, 알림, 이미지, 계정관리 등 |
+| `supabase/migrations/013_project_members.sql` | project_members 테이블 + RLS |
+| `supabase/migrations/014_project_role.sql` | project_members.role 추가, 프로젝트 관리자 권한 정책 |
+| `supabase/migrations/015_project_categories.sql` | project_categories 테이블 + RLS |
+| `supabase/migrations/016_private_projects.sql` | projects.is_private + 비공개 RLS 정책 |
+
+> 모든 마이그레이션은 Supabase 대시보드 SQL Editor에서 수동 실행됨
+
+## 구현된 페이지
+| 파일 | 설명 |
+|------|------|
+| `app/login/page.jsx` | 이메일+비밀번호 로그인 |
+| `app/signup/page.jsx` | 이름+이메일+비밀번호 가입, 도메인 검증 |
+| `app/projects/page.jsx` | 프로젝트 목록, 비공개 배지 표시 |
+| `app/projects/[id]/page.jsx` | 프로젝트 상세 + 이슈 목록 |
+| `app/projects/[id]/issues/new/page.jsx` | 이슈 생성 |
+| `app/projects/[id]/issues/[issueId]/page.jsx` | 이슈 상세 |
+| `app/account/page.jsx` | 계정 설정 (이름 변경, 비밀번호 변경, 탈퇴) |
+| `app/admin/trash/page.jsx` | 휴지통 (글로벌 관리자 전용) |
+| `app/admin/members/page.jsx` | 멤버 관리 (글로벌 관리자 전용) |
+
+## 구현된 컴포넌트
+| 파일 | 설명 |
+|------|------|
+| `components/Navbar.jsx` | 상단 네비게이션, 알림, 로그아웃 |
+| `components/StatusBadge.jsx` | 상태/우선순위 뱃지 |
+| `components/NewProjectButton.jsx` | 프로젝트 생성 모달, is_private 설정 |
+| `components/ProjectActions.jsx` | 멤버 관리 / 카테고리 관리 / 프로젝트 수정 / 삭제 |
+| `components/ProjectViewClient.jsx` | 목록/칸반 뷰 전환 |
+| `components/IssueList.jsx` | 이슈 목록, 필터, 정렬, bulk 액션, 키보드 단축키 |
+| `components/KanbanBoard.jsx` | 칸반 보드 (드래그앤드롭) |
+| `components/NewIssueForm.jsx` | 이슈 생성 폼 (카테고리 동적 로드) |
+| `components/IssueDetailClient.jsx` | 이슈 상세, 댓글, 활동 로그, 이미지 첨부 |
+| `components/ProjectStats.jsx` | 통계 대시보드 |
+| `components/MembersClient.jsx` | 멤버 관리 UI (글로벌 관리자 영역 분리) |
+| `components/NotificationBell.jsx` | 인앱 알림 벨 |
+| `components/WeeklyReport.jsx` | 주간 리포트 |
+
+## 이슈 상태 / 우선순위
+- 상태: `todo`(할 일) | `in_progress`(진행 중) | `review`(검토 대기) | `done`(완료)
+- 우선순위: `low`(낮음) | `medium`(보통) | `high`(높음)
+- 카테고리: 프로젝트별 `project_categories` 테이블에서 관리 (하드코딩 없음)
 
 ## 환경 변수 (.env.local — 이미 설정됨)
 ```
@@ -77,12 +122,9 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=sb_publishable_4mQDsXGvcksjlHhy7oHx2A_xjddZeFI
 ```
 > Supabase는 anon key를 "publishable key"로 명칭 변경했으나 env var명은 그대로 유지
 
-## 다음 작업 (미완료)
-아직 추가 기능 요청 없음. 다음 중 우선순위에 따라 진행:
-- [ ] 칸반 보드 뷰 (드래그앤드롭)
-- [ ] 이슈 상세 페이지 (별도 라우트)
-- [ ] 댓글 기능
-- [ ] Vercel 배포 설정
+## 향후 과제
+- [ ] 이슈 취소(cancelled) 상태 추가 — DB CHECK 제약 수정 + UI 전체 반영 필요
+- [ ] 다크모드 — 전체 컴포넌트 수정 필요
 
 ## 로컬 실행
 ```bash
