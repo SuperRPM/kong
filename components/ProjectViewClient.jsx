@@ -59,6 +59,7 @@ function ViewContent({ projectId, projectPrefix, initialIssues, members, categor
           projectId={projectId}
           projectPrefix={projectPrefix}
           initialIssues={initialIssues}
+          categories={categories}
         />
       )}
       {view === 'stats' && (
