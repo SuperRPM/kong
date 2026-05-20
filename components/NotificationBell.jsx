@@ -11,6 +11,11 @@ function relativeTime(dateStr) {
   return `${Math.floor(diff / 86400)}일 전`
 }
 
+function showBrowserNotification(message) {
+  if (typeof window === 'undefined' || Notification.permission !== 'granted') return
+  new Notification('Kong', { body: message, icon: '/favicon.ico' })
+}
+
 export default function NotificationBell() {
   const supabase = createClient()
   const [open, setOpen] = useState(false)
@@ -39,6 +44,26 @@ export default function NotificationBell() {
   }, [userId])
 
   useEffect(() => { fetchNotifications() }, [fetchNotifications])
+
+  // Supabase Realtime — 새 알림 실시간 수신
+  useEffect(() => {
+    if (!userId) return
+    const channel = supabase
+      .channel(`notifications:${userId}`)
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'notifications',
+        filter: `recipient_id=eq.${userId}`,
+      }, (payload) => {
+        const n = payload.new
+        setNotifications(prev => [n, ...prev].slice(0, 20))
+        setUnreadCount(prev => prev + 1)
+        showBrowserNotification(n.message)
+      })
+      .subscribe()
+    return () => supabase.removeChannel(channel)
+  }, [userId])
 
   useEffect(() => {
     if (!open) return
@@ -70,7 +95,13 @@ export default function NotificationBell() {
   function toggle() {
     const next = !open
     setOpen(next)
-    if (next) fetchNotifications()
+    if (next) {
+      fetchNotifications()
+      // 벨을 처음 클릭할 때 브라우저 알림 권한 요청
+      if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'default') {
+        Notification.requestPermission()
+      }
+    }
   }
 
   return (
