@@ -53,6 +53,12 @@ export default async function ProjectPage({ params }) {
           </div>
           <div className="flex items-center gap-3 shrink-0">
             <Link
+              href={`/projects/${id}/assign`}
+              className="text-sm font-medium text-[#60646c] hover:text-[#171717] transition-colors"
+            >
+              업무 분배
+            </Link>
+            <Link
               href={`/projects/${id}/report`}
               className="text-sm font-medium text-[#60646c] hover:text-[#171717] transition-colors"
             >
