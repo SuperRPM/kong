@@ -24,15 +24,18 @@ const COL_HEADER_COLOR = {
   done: 'text-[#16a34a]',
 }
 
-export default function KanbanBoard({ projectId, projectPrefix, initialIssues }) {
+export default function KanbanBoard({ projectId, projectPrefix, initialIssues, categories = [] }) {
   const router = useRouter()
   const [issues, setIssues] = useState(initialIssues)
   const [draggingId, setDraggingId] = useState(null)
   const [overColumn, setOverColumn] = useState(null)
+  const [categoryFilter, setCategoryFilter] = useState('all')
+
+  const filtered = categoryFilter === 'all' ? issues : issues.filter(i => i.category === categoryFilter)
 
   const columns = STATUS_OPTIONS.map(opt => ({
     ...opt,
-    issues: issues.filter(i => i.status === opt.value),
+    issues: filtered.filter(i => i.status === opt.value),
   }))
 
   async function handleDrop(issueId, newStatus) {
@@ -58,6 +61,34 @@ export default function KanbanBoard({ projectId, projectPrefix, initialIssues })
   }
 
   return (
+    <div>
+      {categories.length > 0 && (
+        <div className="flex flex-wrap gap-1.5 mb-4">
+          <button
+            onClick={() => setCategoryFilter('all')}
+            className={`text-xs font-medium px-3 py-1.5 rounded-lg border transition-colors ${
+              categoryFilter === 'all'
+                ? 'bg-[#171717] text-white border-[#171717]'
+                : 'bg-white text-[#60646c] border-[#dcdee0] hover:border-[#171717]'
+            }`}
+          >
+            전체
+          </button>
+          {categories.map(cat => (
+            <button
+              key={cat.value}
+              onClick={() => setCategoryFilter(cat.value)}
+              className={`text-xs font-medium px-3 py-1.5 rounded-lg border transition-colors ${
+                categoryFilter === cat.value
+                  ? 'bg-[#171717] text-white border-[#171717]'
+                  : 'bg-white text-[#60646c] border-[#dcdee0] hover:border-[#171717]'
+              }`}
+            >
+              {cat.label}
+            </button>
+          ))}
+        </div>
+      )}
     <div className="flex gap-4 overflow-x-auto pb-4 -mx-1 px-1">
       {columns.map(col => (
         <div
@@ -115,6 +146,7 @@ export default function KanbanBoard({ projectId, projectPrefix, initialIssues })
           </div>
         </div>
       ))}
+    </div>
     </div>
   )
 }
