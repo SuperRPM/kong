@@ -91,7 +91,7 @@ export default function KanbanBoard({ projectId, projectPrefix, initialIssues, c
                   : 'bg-white text-[#60646c] border-[#dcdee0] hover:border-[#171717]'
               }`}
             >
-              {cat.value} — {cat.label}
+              {cat.value}
             </button>
           ))}
         </div>
