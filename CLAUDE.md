@@ -57,15 +57,16 @@ issues          (id UUID PK, project_id → projects,
                  completed_at DATE,
                  created_at, updated_at, deleted_at)
 
-comments        (id UUID PK, issue_id → issues,
-                 user_id → profiles, content TEXT, created_at)
+issue_comments  (id UUID PK, issue_id → issues,
+                 author_id → profiles, body TEXT,
+                 created_at, deleted_at)
 
 issue_activities (id UUID PK, issue_id → issues,
                   user_id → profiles, action TEXT, detail JSONB, created_at)
 
-notifications   (id UUID PK, user_id → profiles,
+notifications   (id UUID PK, recipient_id → profiles,
                  issue_id → issues, type TEXT, message TEXT,
-                 is_read BOOLEAN, created_at)
+                 read_at TIMESTAMPTZ, created_at)
 ```
 
 ## 마이그레이션 현황
@@ -77,6 +78,8 @@ notifications   (id UUID PK, user_id → profiles,
 | `supabase/migrations/014_project_role.sql` | project_members.role 추가, 프로젝트 관리자 권한 정책 |
 | `supabase/migrations/015_project_categories.sql` | project_categories 테이블 + RLS |
 | `supabase/migrations/016_private_projects.sql` | projects.is_private + 비공개 RLS 정책 |
+| `supabase/migrations/017_fix_notifications.sql` | Realtime 구독 + 알림 트리거 수정 (actor NULL 처리) |
+| `supabase/migrations/018_notifications_delete_policy.sql` | 알림 개인삭제 + 클라이언트 INSERT 정책 |
 
 > 모든 마이그레이션은 Supabase 대시보드 SQL Editor에서 수동 실행됨
 
@@ -92,6 +95,8 @@ notifications   (id UUID PK, user_id → profiles,
 | `app/account/page.jsx` | 계정 설정 (이름 변경, 비밀번호 변경, 탈퇴) |
 | `app/admin/trash/page.jsx` | 휴지통 (글로벌 관리자 전용) |
 | `app/admin/members/page.jsx` | 멤버 관리 (글로벌 관리자 전용) |
+| `app/projects/[id]/assign/page.jsx` | 업무 분배 (드래그앤드롭) |
+| `app/issues/[id]/page.jsx` | 이슈 ID → 프로젝트 상세 페이지 리다이렉트 |
 
 ## 구현된 컴포넌트
 | 파일 | 설명 |
@@ -101,7 +106,7 @@ notifications   (id UUID PK, user_id → profiles,
 | `components/NewProjectButton.jsx` | 프로젝트 생성 모달, is_private 설정 |
 | `components/ProjectActions.jsx` | 멤버 관리 / 카테고리 관리 / 프로젝트 수정 / 삭제 |
 | `components/ProjectViewClient.jsx` | 목록/칸반 뷰 전환 |
-| `components/IssueList.jsx` | 이슈 목록, 필터, 정렬, bulk 액션, 키보드 단축키 |
+| `components/IssueList.jsx` | 이슈 목록, 필터, 정렬, bulk 액션, 키보드 단축키, 인라인 댓글 |
 | `components/KanbanBoard.jsx` | 칸반 보드 (드래그앤드롭) |
 | `components/NewIssueForm.jsx` | 이슈 생성 폼 (카테고리 동적 로드) |
 | `components/IssueDetailClient.jsx` | 이슈 상세, 댓글, 활동 로그, 이미지 첨부 |
@@ -109,6 +114,7 @@ notifications   (id UUID PK, user_id → profiles,
 | `components/MembersClient.jsx` | 멤버 관리 UI (글로벌 관리자 영역 분리) |
 | `components/NotificationBell.jsx` | 인앱 알림 벨 |
 | `components/WeeklyReport.jsx` | 주간 리포트 |
+| `components/AssignBoard.jsx` | 업무 분배 보드 (드래그앤드롭, CSS Grid 3×3 아레나) |
 
 ## 이슈 상태 / 우선순위
 - 상태: `todo`(할 일) | `in_progress`(진행 중) | `review`(검토 대기) | `done`(완료)

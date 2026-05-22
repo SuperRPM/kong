@@ -13,7 +13,7 @@ const VIEWS = [
   { key: 'stats', label: '통계' },
 ]
 
-function ViewContent({ projectId, projectPrefix, initialIssues, members, categories }) {
+function ViewContent({ projectId, projectPrefix, initialIssues, members, categories, currentUserId }) {
   const searchParams = useSearchParams()
   const router = useRouter()
   const view = searchParams.get('view') ?? 'list'
@@ -51,6 +51,7 @@ function ViewContent({ projectId, projectPrefix, initialIssues, members, categor
           projectPrefix={projectPrefix}
           initialIssues={initialIssues}
           members={members}
+          currentUserId={currentUserId}
           searchInputRef={searchInputRef}
         />
       )}
@@ -69,7 +70,7 @@ function ViewContent({ projectId, projectPrefix, initialIssues, members, categor
   )
 }
 
-export default function ProjectViewClient({ projectId, projectPrefix, initialIssues, members, categories }) {
+export default function ProjectViewClient({ projectId, projectPrefix, initialIssues, members, categories, currentUserId }) {
   return (
     <Suspense fallback={null}>
       <ViewContent
@@ -78,6 +79,7 @@ export default function ProjectViewClient({ projectId, projectPrefix, initialIss
         initialIssues={initialIssues}
         members={members}
         categories={categories}
+        currentUserId={currentUserId}
       />
     </Suspense>
   )
