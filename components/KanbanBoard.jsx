@@ -35,7 +35,9 @@ export default function KanbanBoard({ projectId, projectPrefix, initialIssues, c
 
   function updateCategoryFilter(value) {
     setCategoryFilter(value)
-    router.replace(`${pathname}?kcat=${value}`)
+    const params = new URLSearchParams(searchParams.toString())
+    params.set('kcat', value)
+    router.replace(`${pathname}?${params.toString()}`)
   }
 
   const filtered = categoryFilter === 'all' ? issues : issues.filter(i => i.category === categoryFilter)
