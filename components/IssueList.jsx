@@ -11,10 +11,15 @@ function issueId(prefix, category, number) {
   return `${prefix}-${category}-${String(number).padStart(3, '0')}`
 }
 
+function fmtDate(iso) {
+  if (!iso) return ''
+  return new Date(iso).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+}
+
 const STATUS_ORDER = { todo: 0, in_progress: 1, review: 2, done: 3 }
 const PRIORITY_ORDER = { high: 0, medium: 1, low: 2 }
 
-export default function IssueList({ projectId, projectPrefix, initialIssues, members, searchInputRef: externalSearchRef }) {
+export default function IssueList({ projectId, projectPrefix, initialIssues, members, currentUserId, searchInputRef: externalSearchRef }) {
   const router = useRouter()
   const internalSearchRef = useRef(null)
   const searchInputRef = externalSearchRef ?? internalSearchRef
@@ -25,24 +30,66 @@ export default function IssueList({ projectId, projectPrefix, initialIssues, mem
   const [filterAssignee, setFilterAssignee] = useState('')
   const [searchQuery, setSearchQuery] = useState('')
 
-  // Sorting state
   const [sortKey, setSortKey] = useState(null)
   const [sortDir, setSortDir] = useState('asc')
 
-  // Bulk selection state
   const [selectedIds, setSelectedIds] = useState(new Set())
   const [bulkStatus, setBulkStatus] = useState('todo')
 
-  // Description expand state
-  const [expandedIds, setExpandedIds] = useState(new Set())
+  // Inline expand state
+  const [expandedId, setExpandedId] = useState(null)
+  const [commentsCache, setCommentsCache] = useState({})
+  const [commentsLoading, setCommentsLoading] = useState(new Set())
+  const [commentText, setCommentText] = useState('')
+  const [commentSubmitting, setCommentSubmitting] = useState(false)
+
+  async function loadComments(id) {
+    if (commentsCache[id] !== undefined) return
+    setCommentsLoading(prev => new Set([...prev, id]))
+    const supabase = createClient()
+    const { data } = await supabase
+      .from('issue_comments')
+      .select('id, body, created_at, author_id, author:author_id(name)')
+      .eq('issue_id', id)
+      .is('deleted_at', null)
+      .order('created_at', { ascending: true })
+    setCommentsCache(prev => ({ ...prev, [id]: data ?? [] }))
+    setCommentsLoading(prev => { const s = new Set(prev); s.delete(id); return s })
+  }
 
   function toggleExpand(id) {
-    setExpandedIds(prev => {
-      const next = new Set(prev)
-      if (next.has(id)) next.delete(id)
-      else next.add(id)
-      return next
-    })
+    if (expandedId === id) {
+      setExpandedId(null)
+    } else {
+      setExpandedId(id)
+      setCommentText('')
+      loadComments(id)
+    }
+  }
+
+  async function handleCommentSubmit(issue) {
+    if (!commentText.trim() || !currentUserId) return
+    setCommentSubmitting(true)
+    const supabase = createClient()
+    const { data, error } = await supabase
+      .from('issue_comments')
+      .insert({ issue_id: issue.id, author_id: currentUserId, body: commentText.trim() })
+      .select('id, body, created_at, author_id, author:author_id(name)')
+      .single()
+    if (!error && data) {
+      setCommentsCache(prev => ({ ...prev, [issue.id]: [...(prev[issue.id] ?? []), data] }))
+      const text = commentText.trim()
+      setCommentText('')
+      if (issue.assignee_id && issue.assignee_id !== currentUserId) {
+        await supabase.from('notifications').insert({
+          recipient_id: issue.assignee_id,
+          issue_id: issue.id,
+          type: 'comment',
+          message: `새 댓글이 등록되었습니다: ${text.slice(0, 60)}`,
+        })
+      }
+    }
+    setCommentSubmitting(false)
   }
 
   const categories = useMemo(() => {
@@ -103,7 +150,6 @@ export default function IssueList({ projectId, projectPrefix, initialIssues, mem
     return <span className="ml-0.5">{sortDir === 'asc' ? '▲' : '▼'}</span>
   }
 
-  // Bulk selection helpers
   const allVisibleIds = sortedFiltered.map(i => i.id)
   const allSelected = allVisibleIds.length > 0 && allVisibleIds.every(id => selectedIds.has(id))
   const someSelected = allVisibleIds.some(id => selectedIds.has(id))
@@ -182,6 +228,75 @@ export default function IssueList({ projectId, projectPrefix, initialIssues, mem
 
   const selectCls = 'text-sm bg-white border border-[#dcdee0] rounded-lg px-3 py-1.5 text-[#60646c] focus:outline-none focus:ring-1 focus:ring-[#171717]'
   const sortHeaderCls = 'cursor-pointer select-none hover:text-[#171717] transition-colors'
+
+  function InlinePanel({ issue }) {
+    const isLoading = commentsLoading.has(issue.id)
+    const comments = commentsCache[issue.id] ?? []
+    return (
+      <div
+        className="px-4 py-4 bg-[#fafafa] border-t border-[#f0f0f3]"
+        onClick={e => e.stopPropagation()}
+      >
+        <div className="pl-9 space-y-4">
+          {issue.description && (
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-[#aaaaaa] mb-1.5">설명</p>
+              <p className="text-sm text-[#60646c] whitespace-pre-wrap leading-relaxed">{issue.description}</p>
+            </div>
+          )}
+
+          <div>
+            <p className="text-[11px] font-semibold uppercase tracking-wider text-[#aaaaaa] mb-2">
+              댓글{!isLoading && comments.length > 0 ? ` (${comments.length})` : ''}
+            </p>
+            {isLoading ? (
+              <p className="text-xs text-[#cccccc]">로딩 중...</p>
+            ) : (
+              <>
+                {comments.length > 0 && (
+                  <div className="space-y-2 mb-3">
+                    {comments.map(c => (
+                      <div key={c.id} className="bg-white border border-[#f0f0f3] rounded-lg px-3 py-2.5">
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-xs font-semibold text-[#171717]">{c.author?.name ?? '알 수 없음'}</span>
+                          <span className="text-xs text-[#aaaaaa]">{fmtDate(c.created_at)}</span>
+                        </div>
+                        <p className="text-sm text-[#60646c] whitespace-pre-wrap leading-relaxed">{c.body}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {currentUserId && (
+                  <div className="flex gap-2 items-end">
+                    <textarea
+                      value={commentText}
+                      onChange={e => setCommentText(e.target.value)}
+                      onKeyDown={e => {
+                        if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) handleCommentSubmit(issue)
+                      }}
+                      placeholder="댓글을 입력하세요... (Ctrl+Enter로 제출)"
+                      rows={2}
+                      className="flex-1 text-sm border border-[#dcdee0] rounded-lg px-3 py-2 resize-none focus:outline-none focus:ring-1 focus:ring-[#171717] placeholder:text-[#cccccc]"
+                    />
+                    <button
+                      onClick={() => handleCommentSubmit(issue)}
+                      disabled={commentSubmitting || !commentText.trim()}
+                      className="shrink-0 bg-[#171717] hover:bg-[#333333] disabled:bg-[#cccccc] text-white text-xs font-medium px-4 py-2 rounded-lg transition-colors"
+                    >
+                      {commentSubmitting ? '...' : '등록'}
+                    </button>
+                  </div>
+                )}
+                {!currentUserId && comments.length === 0 && (
+                  <p className="text-xs text-[#cccccc]">댓글이 없습니다.</p>
+                )}
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <>
@@ -287,7 +402,7 @@ export default function IssueList({ projectId, projectPrefix, initialIssues, mem
                   onClick={e => e.stopPropagation()}
                 />
               </div>
-              <div className="w-4 shrink-0" />
+              <div className="w-16 shrink-0" />
               <span className="w-28 shrink-0 text-[11px] font-semibold uppercase tracking-[0.88px] text-[#999999]">ID</span>
               <span className="flex-1 text-[11px] font-semibold uppercase tracking-[0.88px] text-[#999999]">{'제목'}</span>
               <button
@@ -322,8 +437,10 @@ export default function IssueList({ projectId, projectPrefix, initialIssues, mem
               {sortedFiltered.map(issue => (
                 <div key={issue.id}>
                   <div
-                    onClick={() => router.push(`/projects/${projectId}/issues/${issue.id}`)}
-                    className="flex items-center px-4 py-3 hover:bg-[#fafafa] gap-3 transition-colors cursor-pointer"
+                    onClick={() => toggleExpand(issue.id)}
+                    className={`flex items-center px-4 py-3 gap-3 transition-colors cursor-pointer ${
+                      expandedId === issue.id ? 'bg-[#f5f5f7]' : 'hover:bg-[#fafafa]'
+                    }`}
                   >
                     <div className="w-5 shrink-0" onClick={e => e.stopPropagation()}>
                       <input
@@ -333,16 +450,13 @@ export default function IssueList({ projectId, projectPrefix, initialIssues, mem
                         className="rounded border-[#dcdee0] cursor-pointer"
                       />
                     </div>
-                    <div className="w-4 shrink-0" onClick={e => e.stopPropagation()}>
-                      {issue.description ? (
-                        <button
-                          onClick={() => toggleExpand(issue.id)}
-                          className="text-[#999999] hover:text-[#171717] transition-colors leading-none"
-                          title="설명 보기"
-                        >
-                          {expandedIds.has(issue.id) ? '▼' : '▶'}
-                        </button>
-                      ) : null}
+                    <div className="w-16 shrink-0" onClick={e => e.stopPropagation()}>
+                      <Link
+                        href={`/projects/${projectId}/issues/${issue.id}`}
+                        className="text-xs text-[#0d74ce] hover:underline font-medium whitespace-nowrap"
+                      >
+                        상세보기
+                      </Link>
                     </div>
                     <span className="w-28 shrink-0 font-mono text-xs text-[#60646c]">
                       {issueId(projectPrefix, issue.category, issue.number) ?? <span className="text-[#cccccc]">-</span>}
@@ -363,14 +477,7 @@ export default function IssueList({ projectId, projectPrefix, initialIssues, mem
                       {STATUS_OPTIONS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
                     </select>
                   </div>
-                  {expandedIds.has(issue.id) && issue.description && (
-                    <div
-                      className="px-4 py-2.5 bg-[#fafafa] border-t border-[#f0f0f3]"
-                      onClick={() => router.push(`/projects/${projectId}/issues/${issue.id}`)}
-                    >
-                      <p className="text-sm text-[#60646c] whitespace-pre-wrap pl-9">{issue.description}</p>
-                    </div>
-                  )}
+                  {expandedId === issue.id && <InlinePanel issue={issue} />}
                 </div>
               ))}
             </div>
@@ -381,37 +488,46 @@ export default function IssueList({ projectId, projectPrefix, initialIssues, mem
             <div className="divide-y divide-[#f0f0f3]">
               {sortedFiltered.map(issue => {
                 const id = issueId(projectPrefix, issue.category, issue.number)
+                const isExpanded = expandedId === issue.id
                 return (
-                  <div
-                    key={issue.id}
-                    onClick={() => router.push(`/projects/${projectId}/issues/${issue.id}`)}
-                    className="p-4 cursor-pointer active:bg-[#fafafa]"
-                  >
-                    <div className="flex items-start justify-between gap-2 mb-2">
-                      <div className="min-w-0 flex-1">
-                        {id && <span className="font-mono text-xs text-[#999999] block mb-0.5">{id}</span>}
-                        <p className="text-sm font-medium text-[#171717] leading-snug">{issue.title}</p>
+                  <div key={issue.id}>
+                    <div
+                      onClick={() => toggleExpand(issue.id)}
+                      className={`p-4 cursor-pointer ${isExpanded ? 'bg-[#f5f5f7]' : 'active:bg-[#fafafa]'}`}
+                    >
+                      <div className="flex items-start justify-between gap-2 mb-2">
+                        <div className="min-w-0 flex-1">
+                          {id && <span className="font-mono text-xs text-[#999999] block mb-0.5">{id}</span>}
+                          <p className="text-sm font-medium text-[#171717] leading-snug">{issue.title}</p>
+                        </div>
+                        <PriorityBadge priority={issue.priority} />
                       </div>
-                      <PriorityBadge priority={issue.priority} />
+                      <div className="flex items-center gap-2 flex-wrap mb-3">
+                        <StatusBadge status={issue.status} />
+                        {issue.assignee?.name && (
+                          <span className="text-xs text-[#60646c]">&#xB7; {issue.assignee.name}</span>
+                        )}
+                        {issue.planned_at && (
+                          <span className="text-xs text-[#999999]">&#xB7; {issue.planned_at}</span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-3" onClick={e => e.stopPropagation()}>
+                        <select
+                          value={issue.status}
+                          onChange={e => { e.stopPropagation(); handleStatusChange(issue, e.target.value) }}
+                          className="text-xs bg-white border border-[#dcdee0] rounded-lg px-3 py-1.5 text-[#60646c] focus:outline-none"
+                        >
+                          {STATUS_OPTIONS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+                        </select>
+                        <Link
+                          href={`/projects/${projectId}/issues/${issue.id}`}
+                          className="text-xs text-[#0d74ce] hover:underline font-medium"
+                        >
+                          상세보기
+                        </Link>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-2 flex-wrap mb-3">
-                      <StatusBadge status={issue.status} />
-                      {issue.assignee?.name && (
-                        <span className="text-xs text-[#60646c]">&#xB7; {issue.assignee.name}</span>
-                      )}
-                      {issue.planned_at && (
-                        <span className="text-xs text-[#999999]">&#xB7; {issue.planned_at}</span>
-                      )}
-                    </div>
-                    <div onClick={e => e.stopPropagation()}>
-                      <select
-                        value={issue.status}
-                        onChange={e => { e.stopPropagation(); handleStatusChange(issue, e.target.value) }}
-                        className="text-xs bg-white border border-[#dcdee0] rounded-lg px-3 py-1.5 text-[#60646c] focus:outline-none"
-                      >
-                        {STATUS_OPTIONS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
-                      </select>
-                    </div>
+                    {isExpanded && <InlinePanel issue={issue} />}
                   </div>
                 )
               })}

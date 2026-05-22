@@ -72,6 +72,7 @@ export default async function ProjectPage({ params }) {
           initialIssues={issues ?? []}
           members={members ?? []}
           categories={categories ?? []}
+          currentUserId={user.id}
         />
       </main>
     </div>
