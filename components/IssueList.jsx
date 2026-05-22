@@ -19,6 +19,75 @@ function fmtDate(iso) {
 const STATUS_ORDER = { todo: 0, in_progress: 1, review: 2, done: 3 }
 const PRIORITY_ORDER = { high: 0, medium: 1, low: 2 }
 
+function InlinePanel({ issue, commentsLoading, commentsCache, commentText, setCommentText, commentSubmitting, onSubmit, currentUserId }) {
+  const isLoading = commentsLoading.has(issue.id)
+  const comments = commentsCache[issue.id] ?? []
+  return (
+    <div
+      className="px-4 py-4 bg-[#fafafa] border-t border-[#f0f0f3]"
+      onClick={e => e.stopPropagation()}
+    >
+      <div className="pl-9 space-y-4">
+        {issue.description && (
+          <div>
+            <p className="text-[11px] font-semibold uppercase tracking-wider text-[#aaaaaa] mb-1.5">설명</p>
+            <p className="text-sm text-[#60646c] whitespace-pre-wrap leading-relaxed">{issue.description}</p>
+          </div>
+        )}
+
+        <div>
+          <p className="text-[11px] font-semibold uppercase tracking-wider text-[#aaaaaa] mb-2">
+            댓글{!isLoading && comments.length > 0 ? ` (${comments.length})` : ''}
+          </p>
+          {isLoading ? (
+            <p className="text-xs text-[#cccccc]">로딩 중...</p>
+          ) : (
+            <>
+              {comments.length > 0 && (
+                <div className="space-y-2 mb-3">
+                  {comments.map(c => (
+                    <div key={c.id} className="bg-white border border-[#f0f0f3] rounded-lg px-3 py-2.5">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-xs font-semibold text-[#171717]">{c.author?.name ?? '알 수 없음'}</span>
+                        <span className="text-xs text-[#aaaaaa]">{fmtDate(c.created_at)}</span>
+                      </div>
+                      <p className="text-sm text-[#60646c] whitespace-pre-wrap leading-relaxed">{c.body}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {currentUserId && (
+                <div className="flex gap-2 items-end">
+                  <textarea
+                    value={commentText}
+                    onChange={e => setCommentText(e.target.value)}
+                    onKeyDown={e => {
+                      if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) onSubmit(issue)
+                    }}
+                    placeholder="댓글을 입력하세요... (Ctrl+Enter로 제출)"
+                    rows={2}
+                    className="flex-1 text-sm text-[#171717] border border-[#dcdee0] rounded-lg px-3 py-2 resize-none focus:outline-none focus:ring-1 focus:ring-[#171717] placeholder:text-[#cccccc]"
+                  />
+                  <button
+                    onClick={() => onSubmit(issue)}
+                    disabled={commentSubmitting || !commentText.trim()}
+                    className="shrink-0 bg-[#171717] hover:bg-[#333333] disabled:bg-[#cccccc] text-white text-xs font-medium px-4 py-2 rounded-lg transition-colors"
+                  >
+                    {commentSubmitting ? '...' : '등록'}
+                  </button>
+                </div>
+              )}
+              {!currentUserId && comments.length === 0 && (
+                <p className="text-xs text-[#cccccc]">댓글이 없습니다.</p>
+              )}
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function IssueList({ projectId, projectPrefix, initialIssues, members, currentUserId, searchInputRef: externalSearchRef }) {
   const router = useRouter()
   const internalSearchRef = useRef(null)
@@ -229,75 +298,6 @@ export default function IssueList({ projectId, projectPrefix, initialIssues, mem
   const selectCls = 'text-sm bg-white border border-[#dcdee0] rounded-lg px-3 py-1.5 text-[#60646c] focus:outline-none focus:ring-1 focus:ring-[#171717]'
   const sortHeaderCls = 'cursor-pointer select-none hover:text-[#171717] transition-colors'
 
-  function InlinePanel({ issue }) {
-    const isLoading = commentsLoading.has(issue.id)
-    const comments = commentsCache[issue.id] ?? []
-    return (
-      <div
-        className="px-4 py-4 bg-[#fafafa] border-t border-[#f0f0f3]"
-        onClick={e => e.stopPropagation()}
-      >
-        <div className="pl-9 space-y-4">
-          {issue.description && (
-            <div>
-              <p className="text-[11px] font-semibold uppercase tracking-wider text-[#aaaaaa] mb-1.5">설명</p>
-              <p className="text-sm text-[#60646c] whitespace-pre-wrap leading-relaxed">{issue.description}</p>
-            </div>
-          )}
-
-          <div>
-            <p className="text-[11px] font-semibold uppercase tracking-wider text-[#aaaaaa] mb-2">
-              댓글{!isLoading && comments.length > 0 ? ` (${comments.length})` : ''}
-            </p>
-            {isLoading ? (
-              <p className="text-xs text-[#cccccc]">로딩 중...</p>
-            ) : (
-              <>
-                {comments.length > 0 && (
-                  <div className="space-y-2 mb-3">
-                    {comments.map(c => (
-                      <div key={c.id} className="bg-white border border-[#f0f0f3] rounded-lg px-3 py-2.5">
-                        <div className="flex items-center justify-between mb-1">
-                          <span className="text-xs font-semibold text-[#171717]">{c.author?.name ?? '알 수 없음'}</span>
-                          <span className="text-xs text-[#aaaaaa]">{fmtDate(c.created_at)}</span>
-                        </div>
-                        <p className="text-sm text-[#60646c] whitespace-pre-wrap leading-relaxed">{c.body}</p>
-                      </div>
-                    ))}
-                  </div>
-                )}
-                {currentUserId && (
-                  <div className="flex gap-2 items-end">
-                    <textarea
-                      value={commentText}
-                      onChange={e => setCommentText(e.target.value)}
-                      onKeyDown={e => {
-                        if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) handleCommentSubmit(issue)
-                      }}
-                      placeholder="댓글을 입력하세요... (Ctrl+Enter로 제출)"
-                      rows={2}
-                      className="flex-1 text-sm text-[#171717] border border-[#dcdee0] rounded-lg px-3 py-2 resize-none focus:outline-none focus:ring-1 focus:ring-[#171717] placeholder:text-[#cccccc]"
-                    />
-                    <button
-                      onClick={() => handleCommentSubmit(issue)}
-                      disabled={commentSubmitting || !commentText.trim()}
-                      className="shrink-0 bg-[#171717] hover:bg-[#333333] disabled:bg-[#cccccc] text-white text-xs font-medium px-4 py-2 rounded-lg transition-colors"
-                    >
-                      {commentSubmitting ? '...' : '등록'}
-                    </button>
-                  </div>
-                )}
-                {!currentUserId && comments.length === 0 && (
-                  <p className="text-xs text-[#cccccc]">댓글이 없습니다.</p>
-                )}
-              </>
-            )}
-          </div>
-        </div>
-      </div>
-    )
-  }
-
   return (
     <>
       {categories.length > 1 && (
@@ -477,7 +477,7 @@ export default function IssueList({ projectId, projectPrefix, initialIssues, mem
                       {STATUS_OPTIONS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
                     </select>
                   </div>
-                  {expandedId === issue.id && <InlinePanel issue={issue} />}
+                  {expandedId === issue.id && <InlinePanel issue={issue} commentsLoading={commentsLoading} commentsCache={commentsCache} commentText={commentText} setCommentText={setCommentText} commentSubmitting={commentSubmitting} onSubmit={handleCommentSubmit} currentUserId={currentUserId} />}
                 </div>
               ))}
             </div>
