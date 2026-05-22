@@ -276,7 +276,7 @@ export default function IssueList({ projectId, projectPrefix, initialIssues, mem
                       }}
                       placeholder="댓글을 입력하세요... (Ctrl+Enter로 제출)"
                       rows={2}
-                      className="flex-1 text-sm border border-[#dcdee0] rounded-lg px-3 py-2 resize-none focus:outline-none focus:ring-1 focus:ring-[#171717] placeholder:text-[#cccccc]"
+                      className="flex-1 text-sm text-[#171717] border border-[#dcdee0] rounded-lg px-3 py-2 resize-none focus:outline-none focus:ring-1 focus:ring-[#171717] placeholder:text-[#cccccc]"
                     />
                     <button
                       onClick={() => handleCommentSubmit(issue)}
