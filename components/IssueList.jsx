@@ -527,7 +527,7 @@ export default function IssueList({ projectId, projectPrefix, initialIssues, mem
                         </Link>
                       </div>
                     </div>
-                    {isExpanded && <InlinePanel issue={issue} />}
+                    {isExpanded && <InlinePanel issue={issue} commentsLoading={commentsLoading} commentsCache={commentsCache} commentText={commentText} setCommentText={setCommentText} commentSubmitting={commentSubmitting} onSubmit={handleCommentSubmit} currentUserId={currentUserId} />}
                   </div>
                 )
               })}
