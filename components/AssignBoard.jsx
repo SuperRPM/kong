@@ -7,20 +7,18 @@ import { PriorityBadge } from './StatusBadge'
 
 const COLORS = ['#6366f1', '#0d74ce', '#ec4899', '#10b981', '#f59e0b', '#8b5cf6', '#ef4444', '#14b8a6', '#f97316', '#06b6d4']
 
-// 중앙을 기준으로 멤버 배치 슬롯 (최대 8명 + 미분류)
+// Grid 슬롯: [row, col] (1-based)
+// 순서: 상단-왼쪽, 상단-중앙, 상단-오른쪽, 중단-왼쪽, 중단-오른쪽, 하단-왼쪽, 하단-중앙, 하단-오른쪽
 const SLOTS = [
-  { top: '4%',  left: '4%' },
-  { top: '4%',  left: '50%', transform: 'translateX(-50%)' },
-  { top: '4%',  right: '4%' },
-  { top: '50%', left: '1%',  transform: 'translateY(-50%)' },
-  { top: '50%', right: '1%', transform: 'translateY(-50%)' },
-  { bottom: '4%', left: '4%' },
-  { bottom: '4%', left: '50%', transform: 'translateX(-50%)' },
-  { bottom: '4%', right: '4%' },
+  { row: 1, col: 1 },
+  { row: 1, col: 2 },
+  { row: 1, col: 3 },
+  { row: 2, col: 1 },
+  { row: 2, col: 3 },
+  { row: 3, col: 1 },
+  { row: 3, col: 2 },
+  { row: 3, col: 3 },
 ]
-
-// 미분류는 항상 오른쪽 하단 고정
-const DEFERRED_SLOT = { bottom: '4%', right: '4%' }
 
 function fmtId(prefix, category, number) {
   if (!category || !number) return null
@@ -77,9 +75,10 @@ export default function AssignBoard({ projectId, project, members, initialIssues
   const deferredIssues = issues.filter(i => deferred.has(i.id))
 
   // 미분류가 마지막 슬롯을 차지하므로 멤버는 SLOTS.length - 1개까지만 사용
-  const memberSlots = SLOTS.slice(0, Math.min(members.length, SLOTS.length - 1))
-  // 미분류는 마지막 남은 슬롯
-  const deferredSlot = members.length < SLOTS.length ? SLOTS[members.length] : DEFERRED_SLOT
+  const memberCount = Math.min(members.length, SLOTS.length - 1)
+  const memberSlots = SLOTS.slice(0, memberCount)
+  // 미분류는 다음 빈 슬롯 (멤버가 8명이면 마지막 슬롯)
+  const deferredSlot = SLOTS[Math.min(members.length, SLOTS.length - 1)]
 
   async function assignIssue(issueId, memberId) {
     const member = members.find(m => m.id === memberId)
@@ -132,10 +131,22 @@ export default function AssignBoard({ projectId, project, members, initialIssues
       </div>
 
       {/* 아레나 */}
-      <div className="flex-1 relative overflow-hidden bg-[#fafafa]">
+      <div
+        className="flex-1 overflow-auto bg-[#fafafa]"
+        style={{
+          display: 'grid',
+          gridTemplateColumns: '1fr auto 1fr',
+          gridTemplateRows: '1fr auto 1fr',
+          height: '100%',
+          gap: 16,
+          padding: 16,
+          alignItems: 'center',
+          justifyItems: 'center',
+        }}
+      >
 
         {/* 중앙 카드 더미 */}
-        <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: 220 }}>
+        <div style={{ gridRow: 2, gridColumn: 2, width: 220 }}>
           <p className="text-[10px] font-semibold uppercase tracking-widest text-[#aaaaaa] text-center mb-3">미배정 이슈</p>
           {unassigned.length === 0 ? (
             <div className="bg-white border border-dashed border-[#dcdee0] rounded-2xl p-8 text-center">
@@ -186,11 +197,11 @@ export default function AssignBoard({ projectId, project, members, initialIssues
         </div>
 
         {/* 멤버 존들 */}
-        {members.slice(0, memberSlots.length).map((member, idx) => {
+        {members.slice(0, memberCount).map((member, idx) => {
           const color = COLORS[idx % COLORS.length]
           const slot = memberSlots[idx]
           return (
-            <div key={member.id} style={{ position: 'absolute', ...slot }}>
+            <div key={member.id} style={{ gridRow: slot.row, gridColumn: slot.col }}>
               <MemberZone
                 member={member}
                 color={color}
@@ -205,7 +216,7 @@ export default function AssignBoard({ projectId, project, members, initialIssues
         })}
 
         {/* 미분류 존 */}
-        <div style={{ position: 'absolute', ...deferredSlot }}>
+        <div style={{ gridRow: deferredSlot.row, gridColumn: deferredSlot.col }}>
           <div
             onDragOver={e => stopOver(e, 'deferred')}
             onDragLeave={leaveZone}

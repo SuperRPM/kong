@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, usePathname, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { PriorityBadge, STATUS_OPTIONS } from './StatusBadge'
 
@@ -26,10 +26,17 @@ const COL_HEADER_COLOR = {
 
 export default function KanbanBoard({ projectId, projectPrefix, initialIssues, categories = [] }) {
   const router = useRouter()
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
   const [issues, setIssues] = useState(initialIssues)
   const [draggingId, setDraggingId] = useState(null)
   const [overColumn, setOverColumn] = useState(null)
-  const [categoryFilter, setCategoryFilter] = useState('all')
+  const [categoryFilter, setCategoryFilter] = useState(searchParams.get('kcat') ?? 'all')
+
+  function updateCategoryFilter(value) {
+    setCategoryFilter(value)
+    router.replace(`${pathname}?kcat=${value}`)
+  }
 
   const filtered = categoryFilter === 'all' ? issues : issues.filter(i => i.category === categoryFilter)
 
@@ -65,7 +72,7 @@ export default function KanbanBoard({ projectId, projectPrefix, initialIssues, c
       {categories.length > 0 && (
         <div className="flex flex-wrap gap-1.5 mb-4">
           <button
-            onClick={() => setCategoryFilter('all')}
+            onClick={() => updateCategoryFilter('all')}
             className={`text-xs font-medium px-3 py-1.5 rounded-lg border transition-colors ${
               categoryFilter === 'all'
                 ? 'bg-[#171717] text-white border-[#171717]'
@@ -77,14 +84,14 @@ export default function KanbanBoard({ projectId, projectPrefix, initialIssues, c
           {categories.map(cat => (
             <button
               key={cat.value}
-              onClick={() => setCategoryFilter(cat.value)}
+              onClick={() => updateCategoryFilter(cat.value)}
               className={`text-xs font-medium px-3 py-1.5 rounded-lg border transition-colors ${
                 categoryFilter === cat.value
                   ? 'bg-[#171717] text-white border-[#171717]'
                   : 'bg-white text-[#60646c] border-[#dcdee0] hover:border-[#171717]'
               }`}
             >
-              {cat.label}
+              {cat.value} — {cat.label}
             </button>
           ))}
         </div>
