@@ -17,11 +17,10 @@ export default async function ProjectPage({ params }) {
       supabase.from('projects').select('id, name, description, prefix, is_private').eq('id', id).is('deleted_at', null).single(),
       supabase
         .from('issues')
-        .select('id, title, status, priority, category, number, planned_at, completed_at, assignee_id, assignee:assignee_id(name), requester:created_by(name)')
+        .select('id, title, description, status, priority, category, number, planned_at, completed_at, assignee_id, assignee:assignee_id(name), requester:created_by(name)')
         .eq('project_id', id)
         .is('deleted_at', null)
-        .order('category', { ascending: true })
-        .order('number', { ascending: true }),
+        .order('created_at', { ascending: false }),
       supabase.from('project_members').select('user_id, role, profile:user_id(id, name)').eq('project_id', id),
       supabase.from('profiles').select('id, name').order('name'),
       supabase.from('project_categories').select('id, value, label, sort_order').eq('project_id', id).order('sort_order'),

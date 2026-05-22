@@ -33,6 +33,18 @@ export default function IssueList({ projectId, projectPrefix, initialIssues, mem
   const [selectedIds, setSelectedIds] = useState(new Set())
   const [bulkStatus, setBulkStatus] = useState('todo')
 
+  // Description expand state
+  const [expandedIds, setExpandedIds] = useState(new Set())
+
+  function toggleExpand(id) {
+    setExpandedIds(prev => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
   const categories = useMemo(() => {
     const cats = [...new Set(issues.map(i => i.category).filter(Boolean))].sort()
     return ['전체', ...cats]
@@ -275,6 +287,7 @@ export default function IssueList({ projectId, projectPrefix, initialIssues, mem
                   onClick={e => e.stopPropagation()}
                 />
               </div>
+              <div className="w-4 shrink-0" />
               <span className="w-28 shrink-0 text-[11px] font-semibold uppercase tracking-[0.88px] text-[#999999]">ID</span>
               <span className="flex-1 text-[11px] font-semibold uppercase tracking-[0.88px] text-[#999999]">{'제목'}</span>
               <button
@@ -307,37 +320,57 @@ export default function IssueList({ projectId, projectPrefix, initialIssues, mem
             </div>
             <div className="divide-y divide-[#f0f0f3]">
               {sortedFiltered.map(issue => (
-                <div
-                  key={issue.id}
-                  onClick={() => router.push(`/projects/${projectId}/issues/${issue.id}`)}
-                  className="flex items-center px-4 py-3 hover:bg-[#fafafa] gap-3 transition-colors cursor-pointer"
-                >
-                  <div className="w-5 shrink-0" onClick={e => e.stopPropagation()}>
-                    <input
-                      type="checkbox"
-                      checked={selectedIds.has(issue.id)}
-                      onChange={() => toggleSelectOne(issue.id)}
-                      className="rounded border-[#dcdee0] cursor-pointer"
-                    />
-                  </div>
-                  <span className="w-28 shrink-0 font-mono text-xs text-[#60646c]">
-                    {issueId(projectPrefix, issue.category, issue.number) ?? <span className="text-[#cccccc]">-</span>}
-                  </span>
-                  <span className="flex-1 min-w-0 text-sm text-[#171717] truncate">{issue.title}</span>
-                  <div className="w-20 shrink-0"><StatusBadge status={issue.status} /></div>
-                  <div className="w-14 shrink-0"><PriorityBadge priority={issue.priority} /></div>
-                  <span className="w-20 shrink-0 text-xs text-[#60646c] truncate">{issue.assignee?.name ?? '-'}</span>
-                  <span className="w-20 shrink-0 text-xs text-[#60646c] truncate">{issue.requester?.name ?? '-'}</span>
-                  <span className="w-24 shrink-0 text-xs text-[#60646c]">{issue.planned_at ?? '-'}</span>
-                  <span className="w-24 shrink-0 text-xs text-[#60646c]">{issue.completed_at ?? '-'}</span>
-                  <select
-                    value={issue.status}
-                    onClick={e => e.stopPropagation()}
-                    onChange={e => { e.stopPropagation(); handleStatusChange(issue, e.target.value) }}
-                    className="w-28 shrink-0 text-xs bg-white border border-[#dcdee0] rounded px-2 py-1 text-[#60646c] focus:outline-none focus:ring-1 focus:ring-[#171717]"
+                <div key={issue.id}>
+                  <div
+                    onClick={() => router.push(`/projects/${projectId}/issues/${issue.id}`)}
+                    className="flex items-center px-4 py-3 hover:bg-[#fafafa] gap-3 transition-colors cursor-pointer"
                   >
-                    {STATUS_OPTIONS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
-                  </select>
+                    <div className="w-5 shrink-0" onClick={e => e.stopPropagation()}>
+                      <input
+                        type="checkbox"
+                        checked={selectedIds.has(issue.id)}
+                        onChange={() => toggleSelectOne(issue.id)}
+                        className="rounded border-[#dcdee0] cursor-pointer"
+                      />
+                    </div>
+                    <div className="w-4 shrink-0" onClick={e => e.stopPropagation()}>
+                      {issue.description ? (
+                        <button
+                          onClick={() => toggleExpand(issue.id)}
+                          className="text-[#999999] hover:text-[#171717] transition-colors leading-none"
+                          title="설명 보기"
+                        >
+                          {expandedIds.has(issue.id) ? '▼' : '▶'}
+                        </button>
+                      ) : null}
+                    </div>
+                    <span className="w-28 shrink-0 font-mono text-xs text-[#60646c]">
+                      {issueId(projectPrefix, issue.category, issue.number) ?? <span className="text-[#cccccc]">-</span>}
+                    </span>
+                    <span className="flex-1 min-w-0 text-sm text-[#171717] truncate">{issue.title}</span>
+                    <div className="w-20 shrink-0"><StatusBadge status={issue.status} /></div>
+                    <div className="w-14 shrink-0"><PriorityBadge priority={issue.priority} /></div>
+                    <span className="w-20 shrink-0 text-xs text-[#60646c] truncate">{issue.assignee?.name ?? '-'}</span>
+                    <span className="w-20 shrink-0 text-xs text-[#60646c] truncate">{issue.requester?.name ?? '-'}</span>
+                    <span className="w-24 shrink-0 text-xs text-[#60646c]">{issue.planned_at ?? '-'}</span>
+                    <span className="w-24 shrink-0 text-xs text-[#60646c]">{issue.completed_at ?? '-'}</span>
+                    <select
+                      value={issue.status}
+                      onClick={e => e.stopPropagation()}
+                      onChange={e => { e.stopPropagation(); handleStatusChange(issue, e.target.value) }}
+                      className="w-28 shrink-0 text-xs bg-white border border-[#dcdee0] rounded px-2 py-1 text-[#60646c] focus:outline-none focus:ring-1 focus:ring-[#171717]"
+                    >
+                      {STATUS_OPTIONS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+                    </select>
+                  </div>
+                  {expandedIds.has(issue.id) && issue.description && (
+                    <div
+                      className="px-4 py-2.5 bg-[#fafafa] border-t border-[#f0f0f3]"
+                      onClick={() => router.push(`/projects/${projectId}/issues/${issue.id}`)}
+                    >
+                      <p className="text-sm text-[#60646c] whitespace-pre-wrap pl-9">{issue.description}</p>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>

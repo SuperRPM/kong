@@ -41,7 +41,8 @@ export default function NewIssueForm({ projectId, projectPrefix, members, catego
       .single()
     setLoading(false)
     if (!error && data) {
-      router.push(`/projects/${projectId}/issues/${data.id}`)
+      router.refresh()
+      router.push(`/projects/${projectId}`)
     }
   }
 
