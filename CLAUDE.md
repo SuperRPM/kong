@@ -1,4 +1,5 @@
 @AGENTS.md
+@MEMORY.md
 
 # Kong — 프로젝트 진행 현황
 
@@ -131,11 +132,6 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=sb_publishable_4mQDsXGvcksjlHhy7oHx2A_xjddZeFI
 ## 향후 과제
 - [ ] 이슈 취소(cancelled) 상태 추가 — DB CHECK 제약 수정 + UI 전체 반영 필요
 - [ ] 다크모드 — 전체 컴포넌트 수정 필요
-
-## 코딩 주의사항 (시행착오)
-- `input`/`textarea` 생성 시 `text-[#171717]` 반드시 명시 — Tailwind v4는 `body` color를 폼 요소에 상속하지 않음
-- 컴포넌트 정의는 반드시 모듈 레벨 — 함수 내부에 정의하면 매 렌더마다 remount되어 포커스 소실 등 부작용 발생
-- URL params 변경 시 `new URLSearchParams(searchParams.toString())` 후 `.set()` — 통째로 교체하면 기존 파라미터 날아감
 
 ## 로컬 실행
 ```bash
