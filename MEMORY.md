@@ -27,3 +27,19 @@
 
 - **버전 파일(`lib/version.js`) 업데이트는 PHASE.md 버전 히스토리 작성과 함께**
   PHASE.md 버전 기록만 하고 `lib/version.js`를 깜빡하면 앱 표시 버전이 고정됨.
+
+## 데이터 모델링
+
+- **두 가지 ID 포맷이 공존하면 표시 함수를 한 곳에서 정의**
+  하위이슈 도입 시 부모 `REQ-SL-001`과 자식 `REQ-SL-001-2` 포맷이 공존. `displayId(prefix, issue)` 같은 단일 헬퍼로 통일 안 하면 컴포넌트마다 분기 로직 흩어지고 한 곳 빠뜨림. (실제로 AssignBoard 빠뜨려서 자식 ID 표시 안 됨)
+
+- **소프트 딜리트 cascade는 `ON DELETE CASCADE`로 해결 안 됨**
+  PostgreSQL FK의 `ON DELETE CASCADE`는 hard delete 시에만 동작. soft delete(`deleted_at` 세팅)는 `AFTER UPDATE OF deleted_at` 트리거로 자식 row의 `deleted_at`도 함께 세팅해야 함.
+
+- **자기참조 트리거에서 부모의 부모 조회 시 NULL 분기 필수**
+  계층 깊이 제한 같은 검사에서 `NEW.parent_issue_id IS NOT NULL`을 먼저 확인하지 않으면 NULL 비교가 의도와 다르게 동작.
+
+## UI
+
+- **CSS 기반 hover popover가 React state보다 안전**
+  `group` + `group-hover:block`만으로 마우스 진입 시 팝오버 표시 가능. state 사용하면 hover 진입/이탈 시 재렌더 + 위치 계산 이슈 발생 가능. 단순 정보 노출용은 CSS only가 우월.

@@ -15,7 +15,7 @@ export default async function AssignPage({ params }) {
     supabase.from('project_members').select('user_id, role, profile:user_id(id, name)').eq('project_id', projectId),
     supabase
       .from('issues')
-      .select('id, number, title, description, status, priority, category, assignee_id, assignee:assignee_id(name)')
+      .select('id, number, sub_number, parent_issue_id, title, description, status, priority, category, assignee_id, assignee:assignee_id(name), parent:parent_issue_id(category, number)')
       .eq('project_id', projectId)
       .is('deleted_at', null)
       .neq('status', 'done')
