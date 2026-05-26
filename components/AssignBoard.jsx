@@ -25,6 +25,15 @@ function fmtId(prefix, category, number) {
   return `${prefix}-${category}-${String(number).padStart(3, '0')}`
 }
 
+function displayId(prefix, issue) {
+  if (issue.parent_issue_id) {
+    const p = issue.parent
+    if (!p?.category || !p?.number || !issue.sub_number) return null
+    return `${prefix}-${p.category}-${String(p.number).padStart(3, '0')}-${issue.sub_number}`
+  }
+  return fmtId(prefix, issue.category, issue.number)
+}
+
 function MemberZone({ member, color, assigned, isOver, onDragOver, onDragLeave, onDrop }) {
   return (
     <div
@@ -160,7 +169,7 @@ export default function AssignBoard({ projectId, project, members, initialIssues
                 {unassigned.slice(0, 3).reverse().map((issue, idx, arr) => {
                   const isTop = idx === arr.length - 1
                   const stackIdx = arr.length - 1 - idx
-                  const issueId = fmtId(project?.prefix, issue.category, issue.number)
+                  const issueId = displayId(project?.prefix, issue)
                   return (
                     <div
                       key={issue.id}
