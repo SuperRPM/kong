@@ -11,6 +11,18 @@ function issueId(prefix, category, number) {
   return `${prefix}-${category}-${String(number).padStart(3, '0')}`
 }
 
+function subIssueId(prefix, parentCategory, parentNumber, subNumber) {
+  if (!parentCategory || !parentNumber || !subNumber) return null
+  return `${prefix}-${parentCategory}-${String(parentNumber).padStart(3, '0')}-${subNumber}`
+}
+
+function displayId(prefix, issue) {
+  if (issue.parent_issue_id) {
+    return subIssueId(prefix, issue.parent?.category, issue.parent?.number, issue.sub_number)
+  }
+  return issueId(prefix, issue.category, issue.number)
+}
+
 function fmtDate(iso) {
   if (!iso) return ''
   return new Date(iso).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
@@ -19,7 +31,7 @@ function fmtDate(iso) {
 const STATUS_ORDER = { todo: 0, in_progress: 1, review: 2, done: 3 }
 const PRIORITY_ORDER = { high: 0, medium: 1, low: 2 }
 
-function InlinePanel({ issue, commentsLoading, commentsCache, commentText, setCommentText, commentSubmitting, onSubmit, currentUserId }) {
+function InlinePanel({ issue, projectId, projectPrefix, subIssues, commentsLoading, commentsCache, commentText, setCommentText, commentSubmitting, onSubmit, currentUserId }) {
   const isLoading = commentsLoading.has(issue.id)
   const comments = commentsCache[issue.id] ?? []
   return (
@@ -34,6 +46,41 @@ function InlinePanel({ issue, commentsLoading, commentsCache, commentText, setCo
             <p className="text-sm text-[#60646c] whitespace-pre-wrap leading-relaxed">{issue.description}</p>
           </div>
         )}
+
+        <div>
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-[11px] font-semibold uppercase tracking-wider text-[#aaaaaa]">
+              하위이슈{subIssues.length > 0 ? ` (${subIssues.length})` : ''}
+            </p>
+            <Link
+              href={`/projects/${projectId}/issues/new?parent=${issue.id}`}
+              className="text-[11px] font-medium text-[#0d74ce] hover:underline"
+            >
+              + 하위이슈
+            </Link>
+          </div>
+          {subIssues.length === 0 ? (
+            <p className="text-xs text-[#cccccc]">하위이슈가 없습니다.</p>
+          ) : (
+            <div className="space-y-1">
+              {subIssues.map(sub => {
+                const sid = subIssueId(projectPrefix, issue.category, issue.number, sub.sub_number)
+                return (
+                  <Link
+                    key={sub.id}
+                    href={`/projects/${projectId}/issues/${sub.id}`}
+                    className="flex items-center gap-2 bg-white border border-[#f0f0f3] rounded-lg px-3 py-2 hover:border-[#dcdee0] transition-colors"
+                  >
+                    <span className="font-mono text-[11px] text-[#60646c] w-28 shrink-0">{sid ?? '-'}</span>
+                    <span className="flex-1 min-w-0 text-sm text-[#171717] truncate">{sub.title}</span>
+                    <div className="shrink-0"><StatusBadge status={sub.status} /></div>
+                    <span className="w-16 shrink-0 text-xs text-[#60646c] truncate text-right">{sub.assignee?.name ?? '-'}</span>
+                  </Link>
+                )
+              })}
+            </div>
+          )}
+        </div>
 
         <div>
           <p className="text-[11px] font-semibold uppercase tracking-wider text-[#aaaaaa] mb-2">
@@ -161,24 +208,44 @@ export default function IssueList({ projectId, projectPrefix, initialIssues, mem
     setCommentSubmitting(false)
   }
 
-  const categories = useMemo(() => {
-    const cats = [...new Set(issues.map(i => i.category).filter(Boolean))].sort()
-    return ['전체', ...cats]
+  // 부모/자식 분리
+  const parentIssues = useMemo(() => issues.filter(i => !i.parent_issue_id), [issues])
+  const childrenByParent = useMemo(() => {
+    const map = {}
+    issues.forEach(i => {
+      if (i.parent_issue_id) {
+        if (!map[i.parent_issue_id]) map[i.parent_issue_id] = []
+        map[i.parent_issue_id].push(i)
+      }
+    })
+    Object.values(map).forEach(arr => arr.sort((a, b) => (a.sub_number ?? 0) - (b.sub_number ?? 0)))
+    return map
   }, [issues])
 
+  const categories = useMemo(() => {
+    const cats = [...new Set(parentIssues.map(i => i.category).filter(Boolean))].sort()
+    return ['전체', ...cats]
+  }, [parentIssues])
+
+  // 부모 기준 필터링. 검색은 자식까지 검색하여 자식 매칭 시 부모도 포함.
   const filtered = useMemo(() => {
-    let list = activeCategory === '전체' ? issues : issues.filter(i => i.category === activeCategory)
+    let list = activeCategory === '전체' ? parentIssues : parentIssues.filter(i => i.category === activeCategory)
     if (filterStatus) list = list.filter(i => i.status === filterStatus)
     if (filterAssignee) list = list.filter(i => i.assignee_id === filterAssignee)
     if (searchQuery.trim()) {
       const q = searchQuery.trim().toLowerCase()
-      list = list.filter(i => {
-        const id = issueId(projectPrefix, i.category, i.number) ?? ''
-        return i.title.toLowerCase().includes(q) || id.toLowerCase().includes(q)
+      list = list.filter(parent => {
+        const pid = issueId(projectPrefix, parent.category, parent.number) ?? ''
+        if (parent.title.toLowerCase().includes(q) || pid.toLowerCase().includes(q)) return true
+        const children = childrenByParent[parent.id] ?? []
+        return children.some(c => {
+          const cid = subIssueId(projectPrefix, parent.category, parent.number, c.sub_number) ?? ''
+          return c.title.toLowerCase().includes(q) || cid.toLowerCase().includes(q)
+        })
       })
     }
     return list
-  }, [issues, activeCategory, filterStatus, filterAssignee, searchQuery, projectPrefix])
+  }, [parentIssues, childrenByParent, activeCategory, filterStatus, filterAssignee, searchQuery, projectPrefix])
 
   const sortedFiltered = useMemo(() => {
     if (!sortKey) return filtered
@@ -271,17 +338,34 @@ export default function IssueList({ projectId, projectPrefix, initialIssues, mem
 
   function handleExportCSV() {
     const headers = ['ID', '제목', '상태', '우선순위', '카테고리', '담당자', '요청자', '계획완료일', '완료일']
-    const rows = filtered.map(issue => [
-      issueId(projectPrefix, issue.category, issue.number) ?? '',
-      issue.title,
-      STATUS_KO[issue.status] ?? issue.status,
-      PRIORITY_KO[issue.priority] ?? issue.priority,
-      issue.category ?? '',
-      issue.assignee?.name ?? '',
-      issue.requester?.name ?? '',
-      issue.planned_at ?? '',
-      issue.completed_at ?? '',
-    ])
+    const rows = []
+    filtered.forEach(issue => {
+      rows.push([
+        issueId(projectPrefix, issue.category, issue.number) ?? '',
+        issue.title,
+        STATUS_KO[issue.status] ?? issue.status,
+        PRIORITY_KO[issue.priority] ?? issue.priority,
+        issue.category ?? '',
+        issue.assignee?.name ?? '',
+        issue.requester?.name ?? '',
+        issue.planned_at ?? '',
+        issue.completed_at ?? '',
+      ])
+      const subs = childrenByParent[issue.id] ?? []
+      subs.forEach(sub => {
+        rows.push([
+          '    ' + (subIssueId(projectPrefix, issue.category, issue.number, sub.sub_number) ?? ''),
+          '    └ ' + sub.title,
+          STATUS_KO[sub.status] ?? sub.status,
+          PRIORITY_KO[sub.priority] ?? sub.priority,
+          sub.category ?? '',
+          sub.assignee?.name ?? '',
+          sub.requester?.name ?? '',
+          sub.planned_at ?? '',
+          sub.completed_at ?? '',
+        ])
+      })
+    })
     const csvContent = [headers, ...rows]
       .map(row => row.map(cell => '"' + String(cell).replace(/"/g, '""') + '"').join(','))
       .join('\n')
@@ -477,7 +561,7 @@ export default function IssueList({ projectId, projectPrefix, initialIssues, mem
                       {STATUS_OPTIONS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
                     </select>
                   </div>
-                  {expandedId === issue.id && <InlinePanel issue={issue} commentsLoading={commentsLoading} commentsCache={commentsCache} commentText={commentText} setCommentText={setCommentText} commentSubmitting={commentSubmitting} onSubmit={handleCommentSubmit} currentUserId={currentUserId} />}
+                  {expandedId === issue.id && <InlinePanel issue={issue} projectId={projectId} projectPrefix={projectPrefix} subIssues={childrenByParent[issue.id] ?? []} commentsLoading={commentsLoading} commentsCache={commentsCache} commentText={commentText} setCommentText={setCommentText} commentSubmitting={commentSubmitting} onSubmit={handleCommentSubmit} currentUserId={currentUserId} />}
                 </div>
               ))}
             </div>
@@ -527,7 +611,7 @@ export default function IssueList({ projectId, projectPrefix, initialIssues, mem
                         </Link>
                       </div>
                     </div>
-                    {isExpanded && <InlinePanel issue={issue} commentsLoading={commentsLoading} commentsCache={commentsCache} commentText={commentText} setCommentText={setCommentText} commentSubmitting={commentSubmitting} onSubmit={handleCommentSubmit} currentUserId={currentUserId} />}
+                    {isExpanded && <InlinePanel issue={issue} projectId={projectId} projectPrefix={projectPrefix} subIssues={childrenByParent[issue.id] ?? []} commentsLoading={commentsLoading} commentsCache={commentsCache} commentText={commentText} setCommentText={setCommentText} commentSubmitting={commentSubmitting} onSubmit={handleCommentSubmit} currentUserId={currentUserId} />}
                   </div>
                 )
               })}

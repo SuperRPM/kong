@@ -19,16 +19,21 @@ export default async function WeeklyReportPage({ params }) {
   const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
   const { data: completed } = await supabase
     .from('issues')
-    .select('id, title, category, number, completed_at, assignee:assignee_id(name), requester:created_by(name)')
+    .select('id, title, category, number, sub_number, parent_issue_id, completed_at, assignee:assignee_id(name), requester:created_by(name), parent:parent_issue_id(category, number)')
     .eq('project_id', projectId)
     .eq('status', 'done')
     .gte('completed_at', sevenDaysAgo)
     .is('deleted_at', null)
     .order('completed_at', { ascending: false })
 
-  function issueId(category, number) {
-    if (!category || !number) return null
-    return `${project.prefix}-${category}-${String(number).padStart(3, '0')}`
+  function issueId(issue) {
+    if (issue.parent_issue_id) {
+      const p = issue.parent
+      if (!p?.category || !p?.number || !issue.sub_number) return null
+      return `${project.prefix}-${p.category}-${String(p.number).padStart(3, '0')}-${issue.sub_number}`
+    }
+    if (!issue.category || !issue.number) return null
+    return `${project.prefix}-${issue.category}-${String(issue.number).padStart(3, '0')}`
   }
 
   return (
@@ -65,7 +70,7 @@ export default async function WeeklyReportPage({ params }) {
               <div className="divide-y divide-[#f0f0f3]">
                 {completed.map(issue => (
                   <Link key={issue.id} href={`/projects/${projectId}/issues/${issue.id}`} className="flex items-center px-4 py-3 hover:bg-[#fafafa] gap-3 transition-colors">
-                    <span className="w-28 shrink-0 font-mono text-xs text-[#60646c]">{issueId(issue.category, issue.number) ?? '-'}</span>
+                    <span className="w-28 shrink-0 font-mono text-xs text-[#60646c]">{issueId(issue) ?? '-'}</span>
                     <span className="flex-1 min-w-0 text-sm text-[#171717] truncate">{issue.title}</span>
                     <span className="w-20 shrink-0 text-xs text-[#60646c]">{issue.category ?? '-'}</span>
                     <span className="w-20 shrink-0 text-xs text-[#60646c]">{issue.assignee?.name ?? '-'}</span>
@@ -79,7 +84,7 @@ export default async function WeeklyReportPage({ params }) {
             <div className="md:hidden divide-y divide-[#f0f0f3]">
               {completed.map(issue => (
                 <Link key={issue.id} href={`/projects/${projectId}/issues/${issue.id}`} className="block p-4 hover:bg-[#fafafa] transition-colors">
-                  <span className="font-mono text-xs text-[#999999] block mb-1">{issueId(issue.category, issue.number) ?? '-'}</span>
+                  <span className="font-mono text-xs text-[#999999] block mb-1">{issueId(issue) ?? '-'}</span>
                   <p className="text-sm font-medium text-[#171717] mb-2">{issue.title}</p>
                   <div className="flex items-center gap-3 text-xs text-[#60646c]">
                     {issue.assignee?.name && <span>{issue.assignee.name}</span>}

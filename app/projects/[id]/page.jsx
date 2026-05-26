@@ -17,7 +17,7 @@ export default async function ProjectPage({ params }) {
       supabase.from('projects').select('id, name, description, prefix, is_private').eq('id', id).is('deleted_at', null).single(),
       supabase
         .from('issues')
-        .select('id, title, description, status, priority, category, number, planned_at, completed_at, assignee_id, assignee:assignee_id(name), requester:created_by(name)')
+        .select('id, title, description, status, priority, category, number, sub_number, parent_issue_id, planned_at, completed_at, assignee_id, assignee:assignee_id(name), requester:created_by(name), parent:parent_issue_id(category, number)')
         .eq('project_id', id)
         .is('deleted_at', null)
         .order('created_at', { ascending: false }),
