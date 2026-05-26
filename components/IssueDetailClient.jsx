@@ -2,6 +2,7 @@
 
 import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { StatusBadge, PriorityBadge, STATUS_OPTIONS, PRIORITY_OPTIONS } from './StatusBadge'
 
@@ -14,6 +15,51 @@ const labelCls = 'block text-sm font-medium text-[#171717] mb-1'
 function formatIssueId(prefix, category, number) {
   if (!category || !number) return null
   return `${prefix}-${category}-${String(number).padStart(3, '0')}`
+}
+
+function formatSubIssueId(prefix, parentCategory, parentNumber, subNumber) {
+  if (!parentCategory || !parentNumber || !subNumber) return null
+  return `${prefix}-${parentCategory}-${String(parentNumber).padStart(3, '0')}-${subNumber}`
+}
+
+function SubIssuesSection({ projectId, parentId, projectPrefix, parentCategory, parentNumber, initialSubIssues }) {
+  return (
+    <div className="mt-6 bg-white border border-[#dcdee0] rounded-xl p-6">
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-sm font-semibold text-[#171717]">
+          하위이슈{initialSubIssues.length > 0 ? ` (${initialSubIssues.length})` : ''}
+        </h2>
+        <Link
+          href={`/projects/${projectId}/issues/new?parent=${parentId}`}
+          className="text-xs font-medium text-[#0d74ce] hover:text-[#0b63b0] transition-colors"
+        >
+          + 하위이슈
+        </Link>
+      </div>
+      {initialSubIssues.length === 0 ? (
+        <p className="text-sm text-[#cccccc]">하위이슈가 없습니다.</p>
+      ) : (
+        <div className="divide-y divide-[#f0f0f3] border border-[#f0f0f3] rounded-lg overflow-hidden">
+          {initialSubIssues.map(sub => {
+            const subId = formatSubIssueId(projectPrefix, parentCategory, parentNumber, sub.sub_number)
+            return (
+              <Link
+                key={sub.id}
+                href={`/projects/${projectId}/issues/${sub.id}`}
+                className="flex items-center gap-3 px-4 py-3 hover:bg-[#fafafa] transition-colors"
+              >
+                <span className="font-mono text-xs text-[#60646c] w-32 shrink-0">{subId ?? '-'}</span>
+                <span className="flex-1 min-w-0 text-sm text-[#171717] truncate">{sub.title}</span>
+                <div className="shrink-0"><StatusBadge status={sub.status} /></div>
+                <div className="shrink-0"><PriorityBadge priority={sub.priority} /></div>
+                <span className="w-20 shrink-0 text-xs text-[#60646c] truncate text-right">{sub.assignee?.name ?? '-'}</span>
+              </Link>
+            )
+          })}
+        </div>
+      )}
+    </div>
+  )
 }
 
 function formatDate(ts) {
@@ -324,7 +370,7 @@ function ActivityLog({ logs }) {
   )
 }
 
-export default function IssueDetailClient({ issue, members, projectId, initialComments, currentUserId, isAdmin, categories = [], activityLogs, initialAttachments }) {
+export default function IssueDetailClient({ issue, members, projectId, initialComments, currentUserId, isAdmin, categories = [], activityLogs, initialAttachments, initialSubIssues = [] }) {
   const router = useRouter()
   const [editing, setEditing] = useState(false)
   const [deleteConfirm, setDeleteConfirm] = useState(false)
@@ -375,11 +421,27 @@ export default function IssueDetailClient({ issue, members, projectId, initialCo
     router.push(`/projects/${projectId}`)
   }
 
-  const id = formatIssueId(prefix, issue.category, issue.number)
+  const isChild = !!issue.parent_issue_id
+  const id = isChild
+    ? formatSubIssueId(prefix, issue.parent?.category, issue.parent?.number, issue.sub_number)
+    : formatIssueId(prefix, issue.category, issue.number)
+  const parentId = issue.parent
+    ? formatIssueId(prefix, issue.parent.category, issue.parent.number)
+    : null
 
   return (
     <>
       <div className="bg-white border border-[#dcdee0] rounded-xl p-6">
+        {isChild && issue.parent && (
+          <div className="mb-4 pb-3 border-b border-[#f0f0f3]">
+            <Link
+              href={`/projects/${projectId}/issues/${issue.parent.id}`}
+              className="text-xs text-[#0d74ce] hover:underline inline-flex items-center gap-1"
+            >
+              ↑ 부모: {parentId} · {issue.parent.title}
+            </Link>
+          </div>
+        )}
         <div className="flex items-start justify-between gap-4 mb-6">
           <div className="flex-1 min-w-0">
             {id && <span className="font-mono text-xs text-[#999999] mb-1 block">{id}</span>}
@@ -414,6 +476,16 @@ export default function IssueDetailClient({ issue, members, projectId, initialCo
         </div>
       </div>
 
+      {!isChild && (
+        <SubIssuesSection
+          projectId={projectId}
+          parentId={issue.id}
+          projectPrefix={prefix}
+          parentCategory={issue.category}
+          parentNumber={issue.number}
+          initialSubIssues={initialSubIssues}
+        />
+      )}
       <ImagesSection issueId={issue.id} initialAttachments={initialAttachments} currentUserId={currentUserId} />
       <CommentsSection issueId={issue.id} initialComments={initialComments} currentUserId={currentUserId} members={members} />
       <ActivityLog logs={activityLogs} />

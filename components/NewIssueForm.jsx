@@ -9,13 +9,22 @@ const inputCls = 'w-full bg-white border border-[#dcdee0] rounded-lg px-4 py-2.5
 const selectCls = 'w-full bg-white border border-[#dcdee0] rounded-lg px-4 py-2.5 text-sm text-[#171717] focus:outline-none focus:ring-2 focus:ring-[#171717]'
 const labelCls = 'block text-sm font-medium text-[#171717] mb-1'
 
-export default function NewIssueForm({ projectId, projectPrefix, members, categories = [] }) {
+export default function NewIssueForm({ projectId, projectPrefix, members, categories = [], potentialParents = [], initialParentId = null }) {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [form, setForm] = useState({
     title: '', description: '', status: 'todo', priority: 'medium',
     assignee_id: '', category: categories[0]?.value ?? '', planned_at: '', completed_at: '',
+    parent_issue_id: initialParentId ?? '',
   })
+
+  const selectedParent = form.parent_issue_id
+    ? potentialParents.find(p => p.id === form.parent_issue_id)
+    : null
+
+  const idPreview = selectedParent
+    ? `${projectPrefix}-${selectedParent.category}-${String(selectedParent.number).padStart(3, '0')}-#`
+    : (form.category ? `${projectPrefix}-${form.category}-###` : '')
 
   async function handleSubmit(e) {
     e.preventDefault()
@@ -34,6 +43,7 @@ export default function NewIssueForm({ projectId, projectPrefix, members, catego
         category: form.category || null,
         planned_at: form.planned_at || null,
         completed_at: form.completed_at || null,
+        parent_issue_id: form.parent_issue_id || null,
         project_id: projectId,
         created_by: user.id,
       })
@@ -48,6 +58,28 @@ export default function NewIssueForm({ projectId, projectPrefix, members, catego
 
   return (
     <form onSubmit={handleSubmit} className="bg-white border border-[#dcdee0] rounded-xl p-6 space-y-4">
+      {potentialParents.length > 0 && (
+        <div>
+          <label className={labelCls}>부모 이슈 (선택 — 하위이슈로 만들 경우)</label>
+          <select
+            value={form.parent_issue_id}
+            onChange={e => setForm(f => ({ ...f, parent_issue_id: e.target.value }))}
+            className={selectCls}
+          >
+            <option value="">없음 (독립 이슈)</option>
+            {potentialParents.map(p => (
+              <option key={p.id} value={p.id}>
+                {p.category && p.number
+                  ? `${projectPrefix}-${p.category}-${String(p.number).padStart(3, '0')} · ${p.title}`
+                  : p.title}
+              </option>
+            ))}
+          </select>
+          {selectedParent && (
+            <p className="text-xs text-[#999999] mt-1">하위이슈는 부모 카테고리 prefix를 따릅니다. 자식 카테고리는 독립이며 표시 ID는 부모 기준.</p>
+          )}
+        </div>
+      )}
       <div className="grid grid-cols-2 gap-4">
         <div>
           <label className={labelCls}>카테고리</label>
@@ -55,7 +87,7 @@ export default function NewIssueForm({ projectId, projectPrefix, members, catego
             <option value="">없음</option>
             {categories.map(opt => <option key={opt.value} value={opt.value}>{opt.value} — {opt.label}</option>)}
           </select>
-          {form.category && <p className="text-xs text-[#999999] mt-1 font-mono">{projectPrefix}-{form.category}-###</p>}
+          {idPreview && <p className="text-xs text-[#999999] mt-1 font-mono">{idPreview}</p>}
         </div>
         <div>
           <label className={labelCls}>제목 *</label>

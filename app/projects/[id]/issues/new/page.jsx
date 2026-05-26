@@ -4,17 +4,27 @@ import Link from 'next/link'
 import Navbar from '@/components/Navbar'
 import NewIssueForm from '@/components/NewIssueForm'
 
-export default async function NewIssuePage({ params }) {
+export default async function NewIssuePage({ params, searchParams }) {
   const { id: projectId } = await params
+  const sp = await searchParams
+  const initialParentId = sp?.parent ?? null
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  const [{ data: profile }, { data: project }, { data: membersRaw }, { data: categories }] = await Promise.all([
+  const [{ data: profile }, { data: project }, { data: membersRaw }, { data: categories }, { data: potentialParents }] = await Promise.all([
     supabase.from('profiles').select('name').eq('id', user.id).single(),
     supabase.from('projects').select('id, name, prefix').eq('id', projectId).single(),
     supabase.from('project_members').select('profile:user_id(id, name)').eq('project_id', projectId),
     supabase.from('project_categories').select('id, value, label, sort_order').eq('project_id', projectId).order('sort_order'),
+    supabase
+      .from('issues')
+      .select('id, title, category, number')
+      .eq('project_id', projectId)
+      .is('parent_issue_id', null)
+      .is('deleted_at', null)
+      .order('category', { ascending: true })
+      .order('number', { ascending: true }),
   ])
 
   if (!project) redirect('/projects')
@@ -33,7 +43,14 @@ export default async function NewIssuePage({ params }) {
           ← {project.name}
         </Link>
         <h1 className="text-xl font-semibold text-[#171717] mb-6">새 이슈</h1>
-        <NewIssueForm projectId={projectId} projectPrefix={project.prefix ?? 'REQ'} members={members} categories={categories ?? []} />
+        <NewIssueForm
+          projectId={projectId}
+          projectPrefix={project.prefix ?? 'REQ'}
+          members={members}
+          categories={categories ?? []}
+          potentialParents={potentialParents ?? []}
+          initialParentId={initialParentId}
+        />
       </main>
     </div>
   )

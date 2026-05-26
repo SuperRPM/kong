@@ -1,9 +1,9 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useRouter, usePathname, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { PriorityBadge, STATUS_OPTIONS } from './StatusBadge'
+import { PriorityBadge, StatusBadge, STATUS_OPTIONS } from './StatusBadge'
 
 function fmtId(prefix, category, number) {
   if (!category || !number) return null
@@ -40,7 +40,21 @@ export default function KanbanBoard({ projectId, projectPrefix, initialIssues, c
     router.replace(`${pathname}?${params.toString()}`)
   }
 
-  const filtered = categoryFilter === 'all' ? issues : issues.filter(i => i.category === categoryFilter)
+  // 칸반에는 부모 이슈만 표시 (자식은 호버 미리보기로만 노출)
+  const parents = useMemo(() => issues.filter(i => !i.parent_issue_id), [issues])
+  const childrenByParent = useMemo(() => {
+    const map = {}
+    issues.forEach(i => {
+      if (i.parent_issue_id) {
+        if (!map[i.parent_issue_id]) map[i.parent_issue_id] = []
+        map[i.parent_issue_id].push(i)
+      }
+    })
+    Object.values(map).forEach(arr => arr.sort((a, b) => (a.sub_number ?? 0) - (b.sub_number ?? 0)))
+    return map
+  }, [issues])
+
+  const filtered = categoryFilter === 'all' ? parents : parents.filter(i => i.category === categoryFilter)
 
   const columns = STATUS_OPTIONS.map(opt => ({
     ...opt,
@@ -127,6 +141,8 @@ export default function KanbanBoard({ projectId, projectPrefix, initialIssues, c
           <div className="px-3 pb-3 space-y-2 min-h-[80px]">
             {col.issues.map(issue => {
               const id = fmtId(projectPrefix, issue.category, issue.number)
+              const subs = childrenByParent[issue.id] ?? []
+              const doneCount = subs.filter(s => s.status === 'done').length
               return (
                 <div
                   key={issue.id}
@@ -137,11 +153,18 @@ export default function KanbanBoard({ projectId, projectPrefix, initialIssues, c
                   }}
                   onDragEnd={() => { setDraggingId(null); setOverColumn(null) }}
                   onClick={() => router.push(`/projects/${projectId}/issues/${issue.id}`)}
-                  className={`bg-white border border-[#dcdee0] rounded-lg p-3 cursor-grab active:cursor-grabbing shadow-sm hover:shadow-md transition-all select-none ${
+                  className={`group relative bg-white border border-[#dcdee0] rounded-lg p-3 cursor-grab active:cursor-grabbing shadow-sm hover:shadow-md transition-all select-none ${
                     draggingId === issue.id ? 'opacity-40 scale-95' : ''
                   }`}
                 >
-                  {id && <span className="font-mono text-[10px] text-[#999999] block mb-1">{id}</span>}
+                  <div className="flex items-start justify-between gap-2 mb-1">
+                    {id && <span className="font-mono text-[10px] text-[#999999]">{id}</span>}
+                    {subs.length > 0 && (
+                      <span className="text-[10px] font-semibold text-[#0d74ce] bg-[#eff6ff] px-1.5 py-0.5 rounded">
+                        {doneCount}/{subs.length}
+                      </span>
+                    )}
+                  </div>
                   <p className="text-sm text-[#171717] leading-snug mb-2 line-clamp-2">{issue.title}</p>
                   <div className="flex items-center justify-between gap-2">
                     <PriorityBadge priority={issue.priority} />
@@ -149,6 +172,23 @@ export default function KanbanBoard({ projectId, projectPrefix, initialIssues, c
                       <span className="text-xs text-[#999999] truncate">{issue.assignee.name}</span>
                     )}
                   </div>
+
+                  {subs.length > 0 && (
+                    <div className="hidden group-hover:block absolute left-full top-0 ml-2 w-64 bg-white border border-[#dcdee0] rounded-lg shadow-xl p-2 z-20">
+                      <p className="text-[10px] font-semibold uppercase tracking-wider text-[#aaaaaa] px-2 py-1">
+                        하위이슈 {doneCount}/{subs.length}
+                      </p>
+                      <div className="space-y-1 max-h-72 overflow-y-auto">
+                        {subs.map(sub => (
+                          <div key={sub.id} className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-[#fafafa]">
+                            <span className="font-mono text-[10px] text-[#999999] shrink-0">-{sub.sub_number}</span>
+                            <span className="flex-1 min-w-0 text-xs text-[#171717] truncate">{sub.title}</span>
+                            <div className="shrink-0 scale-90 origin-right"><StatusBadge status={sub.status} /></div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )
             })}

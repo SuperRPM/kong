@@ -14,7 +14,7 @@ export default async function IssuePage({ params }) {
     supabase.from('profiles').select('name, is_admin').eq('id', user.id).single(),
     supabase
       .from('issues')
-      .select('id, title, description, status, priority, category, number, planned_at, completed_at, assignee_id, created_by, assignee:assignee_id(name), requester:created_by(name), project:project_id(id, name, prefix)')
+      .select('id, title, description, status, priority, category, number, sub_number, parent_issue_id, planned_at, completed_at, assignee_id, created_by, assignee:assignee_id(name), requester:created_by(name), project:project_id(id, name, prefix), parent:parent_issue_id(id, category, number, title)')
       .eq('id', issueId)
       .single(),
     supabase.from('project_members').select('user_id, role, profile:user_id(id, name)').eq('project_id', projectId),
@@ -40,6 +40,16 @@ export default async function IssuePage({ params }) {
 
   if (!issue) notFound()
 
+  // 하위이슈는 부모 이슈에만 적용 (자식 이슈는 추가 자식을 가질 수 없음)
+  const { data: subIssues } = issue.parent_issue_id
+    ? { data: [] }
+    : await supabase
+        .from('issues')
+        .select('id, title, status, priority, category, sub_number, assignee:assignee_id(name)')
+        .eq('parent_issue_id', issueId)
+        .is('deleted_at', null)
+        .order('sub_number', { ascending: true })
+
   const members = (membersRaw ?? []).map(m => ({ ...m.profile, role: m.role })).filter(m => m.id)
     .sort((a, b) => a.name.localeCompare(b.name))
   const isProjectAdmin = (membersRaw ?? []).some(m => m.user_id === user.id && m.role === 'admin')
@@ -62,6 +72,7 @@ export default async function IssuePage({ params }) {
           categories={categories ?? []}
           activityLogs={activityLogs ?? []}
           initialAttachments={attachments ?? []}
+          initialSubIssues={subIssues ?? []}
         />
       </main>
     </div>
