@@ -120,8 +120,32 @@
 - 부모 드롭다운: 기본 `<select>` (이슈 수 적으면 충분, 많아지면 향후 검색식으로 개선)
 - 자식 카테고리 독립이지만 표시 ID는 부모 카테고리 prefix 유지 (관계 시각화)
 
+## Phase 13 — 이슈 취소(cancelled) 상태 ⏳ 계획됨
+
+### 결정 사항
+- DB: `issues.status` CHECK 제약에 `'cancelled'` 추가 (migration 020)
+- 시각 표현: 제목 `line-through` + 회색 (`text-[#aaaaaa]`), 행/카드 `opacity-60`, 상태 배지 회색
+- **칸반**: 취소 카드는 숨김 (목록/상세에서만 노출). 가로 공간 부족 + 워크플로우 노이즈 회피
+- **업무 분배(assign)**: 노출 X (deleted와 동일 취급, 쿼리에 `.neq('status', 'cancelled')` 추가)
+- 되돌리기: 가능 (취소된 이슈 status를 todo 등으로 다시 변경 가능)
+- 부모 취소 시 자식: **독립 유지** (Phase 12의 status 독립 원칙 동일 적용)
+- 완료일: 기존 `completed_at` 재사용 — cancelled 변경 시 자동 채움, 되돌리면 자동 비움 (기존 done 로직과 동일 패턴)
+- 통계: total/완료율에서 cancelled 제외 (활성 이슈만)
+- 알림: 기존 status_changed 트리거가 그대로 처리 (별도 처리 불필요)
+- CSV: 포함 (목록에 보이는 모든 이슈)
+- 주간 리포트: 제외 (기존 `status=done` 필터로 자연스럽게 제외됨)
+
+### 작업 범위
+- migration 020: status CHECK 제약 확장
+- `StatusBadge.jsx`: cancelled 옵션 추가 (회색 톤)
+- `IssueList.jsx`: 행 스타일 (line-through, opacity) + completed_at 자동 처리에 cancelled 분기 추가
+- `KanbanBoard.jsx`: cancelled 카드 필터링
+- `AssignBoard.jsx`/`assign/page.jsx`: 쿼리에 cancelled 제외
+- `ProjectStats.jsx`: total/완료율 계산 시 cancelled 제외
+- `IssueDetailClient.jsx`: 상태 드롭다운에 cancelled 옵션, 헤더 영역 시각 표현
+- `NewIssueForm.jsx`: 상태 드롭다운에 cancelled 옵션 (생성 시 거의 안 쓰겠지만 일관성)
+
 ## 미분류 개선 사항 (우선순위 미정)
-- [ ] **이슈 취소(cancelled) 상태 추가** — 현재 status는 todo/in_progress/review/done 4가지뿐. 취소된 이슈를 별도 상태로 관리하려면 DB CHECK 제약 수정 + UI 전체(칸반, 목록, 통계, 배지) 반영 필요
 - [ ] 다크모드 — 전체 컴포넌트 수정 필요, 별도 진행 예정
 
 ---
