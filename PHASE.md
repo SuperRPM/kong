@@ -144,6 +144,7 @@
 - `ProjectStats.jsx`: total/완료율 계산 시 cancelled 제외
 - `IssueDetailClient.jsx`: 상태 드롭다운에 cancelled 옵션, 헤더 영역 시각 표현
 - `NewIssueForm.jsx`: 상태 드롭다운에 cancelled 옵션 (생성 시 거의 안 쓰겠지만 일관성)
+- `issues/new/page.jsx`: 부모 이슈 드롭다운에서 `done` 및 `cancelled` 상태 이슈 제외 (`.neq('status', 'done').neq('status', 'cancelled')`)
 
 ## 미분류 개선 사항 (우선순위 미정)
 - [ ] 다크모드 — 전체 컴포넌트 수정 필요, 별도 진행 예정
