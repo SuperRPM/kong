@@ -84,6 +84,7 @@ notifications   (id UUID PK, recipient_id → profiles,
 | `supabase/migrations/017_fix_notifications.sql` | Realtime 구독 + 알림 트리거 수정 (actor NULL 처리) |
 | `supabase/migrations/018_notifications_delete_policy.sql` | 알림 개인삭제 + 클라이언트 INSERT 정책 |
 | `supabase/migrations/019_sub_issues.sql` | 하위이슈 — parent_issue_id/sub_number 컬럼, 깊이 제한/채번/cascade/부모 알림 트리거 |
+| `supabase/migrations/020_cancelled_status.sql` | 이슈 status CHECK에 `cancelled` 추가 + 알림 트리거 라벨 갱신 |
 
 > 모든 마이그레이션은 Supabase 대시보드 SQL Editor에서 수동 실행됨
 

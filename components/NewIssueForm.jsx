@@ -9,11 +9,11 @@ const inputCls = 'w-full bg-white border border-[#dcdee0] rounded-lg px-4 py-2.5
 const selectCls = 'w-full bg-white border border-[#dcdee0] rounded-lg px-4 py-2.5 text-sm text-[#171717] focus:outline-none focus:ring-2 focus:ring-[#171717]'
 const labelCls = 'block text-sm font-medium text-[#171717] mb-1'
 
-export default function NewIssueForm({ projectId, projectPrefix, members, categories = [], potentialParents = [], initialParentId = null }) {
+export default function NewIssueForm({ projectId, projectPrefix, members, categories = [], potentialParents = [], initialParentId = null, initialStatus = 'todo' }) {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [form, setForm] = useState({
-    title: '', description: '', status: 'todo', priority: 'medium',
+    title: '', description: '', status: initialStatus, priority: 'medium',
     assignee_id: '', category: categories[0]?.value ?? '', planned_at: '', completed_at: '',
     parent_issue_id: initialParentId ?? '',
   })

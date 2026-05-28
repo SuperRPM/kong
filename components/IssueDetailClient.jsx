@@ -42,14 +42,15 @@ function SubIssuesSection({ projectId, parentId, projectPrefix, parentCategory, 
         <div className="divide-y divide-[#f0f0f3] border border-[#f0f0f3] rounded-lg overflow-hidden">
           {initialSubIssues.map(sub => {
             const subId = formatSubIssueId(projectPrefix, parentCategory, parentNumber, sub.sub_number)
+            const isCancelled = sub.status === 'cancelled'
             return (
               <Link
                 key={sub.id}
                 href={`/projects/${projectId}/issues/${sub.id}`}
-                className="flex items-center gap-3 px-4 py-3 hover:bg-[#fafafa] transition-colors"
+                className={`flex items-center gap-3 px-4 py-3 hover:bg-[#fafafa] transition-colors ${isCancelled ? 'opacity-60' : ''}`}
               >
                 <span className="font-mono text-xs text-[#60646c] w-32 shrink-0">{subId ?? '-'}</span>
-                <span className="flex-1 min-w-0 text-sm text-[#171717] truncate">{sub.title}</span>
+                <span className={`flex-1 min-w-0 text-sm truncate ${isCancelled ? 'line-through text-[#aaaaaa]' : 'text-[#171717]'}`}>{sub.title}</span>
                 <div className="shrink-0"><StatusBadge status={sub.status} /></div>
                 <div className="shrink-0"><PriorityBadge priority={sub.priority} /></div>
                 <span className="w-20 shrink-0 text-xs text-[#60646c] truncate text-right">{sub.assignee?.name ?? '-'}</span>
@@ -405,6 +406,13 @@ export default function IssueDetailClient({ issue, members, projectId, initialCo
       planned_at: form.planned_at || null,
       completed_at: form.completed_at || null,
     }
+    const wasClosed = issue.status === 'done' || issue.status === 'cancelled'
+    const isNowClosed = form.status === 'done' || form.status === 'cancelled'
+    if (isNowClosed && !wasClosed && !form.completed_at) {
+      updates.completed_at = new Date().toISOString().split('T')[0]
+    } else if (!isNowClosed && wasClosed) {
+      updates.completed_at = null
+    }
     if (isAdmin) updates.created_by = form.created_by || null
     const { error } = await supabase.from('issues').update(updates).eq('id', issue.id)
     setLoading(false)
@@ -445,7 +453,7 @@ export default function IssueDetailClient({ issue, members, projectId, initialCo
         <div className="flex items-start justify-between gap-4 mb-6">
           <div className="flex-1 min-w-0">
             {id && <span className="font-mono text-xs text-[#999999] mb-1 block">{id}</span>}
-            <h1 className="text-xl font-semibold text-[#171717] leading-snug">{issue.title}</h1>
+            <h1 className={`text-xl font-semibold leading-snug ${issue.status === 'cancelled' ? 'line-through text-[#aaaaaa]' : 'text-[#171717]'}`}>{issue.title}</h1>
           </div>
           <button onClick={() => setEditing(true)} className="shrink-0 text-sm font-medium text-[#60646c] hover:text-[#171717] border border-[#dcdee0] rounded-lg px-3 py-1.5 transition-colors">수정</button>
         </div>

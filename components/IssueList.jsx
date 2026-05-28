@@ -28,7 +28,7 @@ function fmtDate(iso) {
   return new Date(iso).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
 }
 
-const STATUS_ORDER = { todo: 0, in_progress: 1, review: 2, done: 3 }
+const STATUS_ORDER = { todo: 0, in_progress: 1, review: 2, done: 3, cancelled: 4 }
 const PRIORITY_ORDER = { high: 0, medium: 1, low: 2 }
 
 function InlinePanel({ issue, projectId, projectPrefix, subIssues, commentsLoading, commentsCache, commentText, setCommentText, commentSubmitting, onSubmit, currentUserId }) {
@@ -65,14 +65,15 @@ function InlinePanel({ issue, projectId, projectPrefix, subIssues, commentsLoadi
             <div className="space-y-1">
               {subIssues.map(sub => {
                 const sid = subIssueId(projectPrefix, issue.category, issue.number, sub.sub_number)
+                const isCancelled = sub.status === 'cancelled'
                 return (
                   <Link
                     key={sub.id}
                     href={`/projects/${projectId}/issues/${sub.id}`}
-                    className="flex items-center gap-2 bg-white border border-[#f0f0f3] rounded-lg px-3 py-2 hover:border-[#dcdee0] transition-colors"
+                    className={`flex items-center gap-2 bg-white border border-[#f0f0f3] rounded-lg px-3 py-2 hover:border-[#dcdee0] transition-colors ${isCancelled ? 'opacity-60' : ''}`}
                   >
                     <span className="font-mono text-[11px] text-[#60646c] w-28 shrink-0">{sid ?? '-'}</span>
-                    <span className="flex-1 min-w-0 text-sm text-[#171717] truncate">{sub.title}</span>
+                    <span className={`flex-1 min-w-0 text-sm truncate ${isCancelled ? 'line-through text-[#aaaaaa]' : 'text-[#171717]'}`}>{sub.title}</span>
                     <div className="shrink-0"><StatusBadge status={sub.status} /></div>
                     <span className="w-16 shrink-0 text-xs text-[#60646c] truncate text-right">{sub.assignee?.name ?? '-'}</span>
                   </Link>
@@ -321,19 +322,21 @@ export default function IssueList({ projectId, projectPrefix, initialIssues, mem
   async function handleStatusChange(issue, newStatus) {
     const supabase = createClient()
     const updates = { status: newStatus }
-    if (newStatus === 'done') {
+    const newClosed = newStatus === 'done' || newStatus === 'cancelled'
+    const oldClosed = issue.status === 'done' || issue.status === 'cancelled'
+    if (newClosed && !oldClosed) {
       updates.completed_at = new Date().toISOString().split('T')[0]
-    } else if (issue.status === 'done') {
+    } else if (oldClosed && !newClosed) {
       updates.completed_at = null
     }
     const { data } = await supabase
       .from('issues').update(updates).eq('id', issue.id)
-      .select('id, title, status, priority, category, number, planned_at, completed_at, assignee_id, assignee:assignee_id(name), requester:created_by(name)')
+      .select('id, title, status, priority, category, number, sub_number, parent_issue_id, planned_at, completed_at, assignee_id, assignee:assignee_id(name), requester:created_by(name), parent:parent_issue_id(category, number)')
       .single()
     if (data) setIssues(prev => prev.map(i => i.id === data.id ? data : i))
   }
 
-  const STATUS_KO = { todo: '할 일', in_progress: '진행 중', review: '검토 대기', done: '완료' }
+  const STATUS_KO = { todo: '할 일', in_progress: '진행 중', review: '검토 대기', done: '완료', cancelled: '취소' }
   const PRIORITY_KO = { low: '낮음', medium: '보통', high: '높음' }
 
   function handleExportCSV() {
@@ -523,6 +526,8 @@ export default function IssueList({ projectId, projectPrefix, initialIssues, mem
                   <div
                     onClick={() => toggleExpand(issue.id)}
                     className={`flex items-center px-4 py-3 gap-3 transition-colors cursor-pointer ${
+                      issue.status === 'cancelled' ? 'opacity-60' : ''
+                    } ${
                       expandedId === issue.id ? 'bg-[#f5f5f7]' : 'hover:bg-[#fafafa]'
                     }`}
                   >
@@ -545,7 +550,7 @@ export default function IssueList({ projectId, projectPrefix, initialIssues, mem
                     <span className="w-28 shrink-0 font-mono text-xs text-[#60646c]">
                       {issueId(projectPrefix, issue.category, issue.number) ?? <span className="text-[#cccccc]">-</span>}
                     </span>
-                    <span className="flex-1 min-w-0 text-sm text-[#171717] truncate">{issue.title}</span>
+                    <span className={`flex-1 min-w-0 text-sm text-[#171717] truncate ${issue.status === 'cancelled' ? 'line-through text-[#aaaaaa]' : ''}`}>{issue.title}</span>
                     <div className="w-20 shrink-0"><StatusBadge status={issue.status} /></div>
                     <div className="w-14 shrink-0"><PriorityBadge priority={issue.priority} /></div>
                     <span className="w-20 shrink-0 text-xs text-[#60646c] truncate">{issue.assignee?.name ?? '-'}</span>
@@ -577,12 +582,12 @@ export default function IssueList({ projectId, projectPrefix, initialIssues, mem
                   <div key={issue.id}>
                     <div
                       onClick={() => toggleExpand(issue.id)}
-                      className={`p-4 cursor-pointer ${isExpanded ? 'bg-[#f5f5f7]' : 'active:bg-[#fafafa]'}`}
+                      className={`p-4 cursor-pointer ${issue.status === 'cancelled' ? 'opacity-60' : ''} ${isExpanded ? 'bg-[#f5f5f7]' : 'active:bg-[#fafafa]'}`}
                     >
                       <div className="flex items-start justify-between gap-2 mb-2">
                         <div className="min-w-0 flex-1">
                           {id && <span className="font-mono text-xs text-[#999999] block mb-0.5">{id}</span>}
-                          <p className="text-sm font-medium text-[#171717] leading-snug">{issue.title}</p>
+                          <p className={`text-sm font-medium text-[#171717] leading-snug ${issue.status === 'cancelled' ? 'line-through text-[#aaaaaa]' : ''}`}>{issue.title}</p>
                         </div>
                         <PriorityBadge priority={issue.priority} />
                       </div>

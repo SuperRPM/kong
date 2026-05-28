@@ -120,7 +120,7 @@
 - 부모 드롭다운: 기본 `<select>` (이슈 수 적으면 충분, 많아지면 향후 검색식으로 개선)
 - 자식 카테고리 독립이지만 표시 ID는 부모 카테고리 prefix 유지 (관계 시각화)
 
-## Phase 13 — 이슈 취소(cancelled) 상태 ⏳ 계획됨
+## Phase 13 — 이슈 취소(cancelled) 상태 ✅
 
 ### 결정 사항
 - DB: `issues.status` CHECK 제약에 `'cancelled'` 추가 (migration 020)
@@ -228,3 +228,4 @@
 | v2.0.1 | 2026-05-22 | 버그픽스 — 인라인 댓글 textarea 글씨색/포커스 소실, 모바일 props 누락, 칸반 카테고리 view 유지, 버전 동기화 |
 | v2.1.0 | 2026-05-26 | Phase 12 — 하위이슈 (1단계 깊이, 부모별 sub_number 채번, cascade soft delete, 칸반 호버 미리보기, migration 019) |
 | v2.1.1 | 2026-05-26 | 업무 분배 페이지 자식 이슈 노출 + ID 포맷 처리 |
+| v2.2.0 | 2026-05-28 | Phase 13 — 이슈 취소 상태(cancelled), 칸반 컬럼 + 새 이슈 버튼, 부모 드롭다운 done/cancelled 제외 (migration 020) |

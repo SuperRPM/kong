@@ -42,26 +42,27 @@ function SummaryCard({ label, value, sub }) {
 export default function ProjectStats({ issues, categories = [] }) {
   const stats = useMemo(() => {
     const categoryLabelMap = Object.fromEntries(categories.map(c => [c.value, `${c.value} — ${c.label}`]))
-    const total = issues.length
+    const activeIssues = issues.filter(i => i.status !== 'cancelled')
+    const total = activeIssues.length
     const today = new Date().toISOString().split('T')[0]
 
-    const byStatus = STATUS_OPTIONS.map(opt => ({
+    const byStatus = STATUS_OPTIONS.filter(opt => opt.value !== 'cancelled').map(opt => ({
       ...opt,
-      count: issues.filter(i => i.status === opt.value).length,
+      count: activeIssues.filter(i => i.status === opt.value).length,
     }))
 
     const done = byStatus.find(s => s.value === 'done')?.count ?? 0
     const inProgress = byStatus.find(s => s.value === 'in_progress')?.count ?? 0
-    const overdue = issues.filter(i => i.planned_at && i.planned_at < today && i.status !== 'done').length
+    const overdue = activeIssues.filter(i => i.planned_at && i.planned_at < today && i.status !== 'done').length
 
-    const usedCats = [...new Set(issues.map(i => i.category).filter(Boolean))].sort()
+    const usedCats = [...new Set(activeIssues.map(i => i.category).filter(Boolean))].sort()
     const byCategory = usedCats.map(cat => ({
       label: categoryLabelMap[cat] ?? cat,
-      count: issues.filter(i => i.category === cat).length,
+      count: activeIssues.filter(i => i.category === cat).length,
     }))
 
     const assigneeMap = {}
-    issues.forEach(i => {
+    activeIssues.forEach(i => {
       const name = i.assignee?.name ?? '미지정'
       assigneeMap[name] = (assigneeMap[name] ?? 0) + 1
     })

@@ -4,10 +4,13 @@ import Link from 'next/link'
 import Navbar from '@/components/Navbar'
 import NewIssueForm from '@/components/NewIssueForm'
 
+const VALID_STATUSES = new Set(['todo', 'in_progress', 'review', 'done', 'cancelled'])
+
 export default async function NewIssuePage({ params, searchParams }) {
   const { id: projectId } = await params
   const sp = await searchParams
   const initialParentId = sp?.parent ?? null
+  const initialStatus = VALID_STATUSES.has(sp?.status) ? sp.status : 'todo'
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
@@ -23,6 +26,8 @@ export default async function NewIssuePage({ params, searchParams }) {
       .eq('project_id', projectId)
       .is('parent_issue_id', null)
       .is('deleted_at', null)
+      .neq('status', 'done')
+      .neq('status', 'cancelled')
       .order('category', { ascending: true })
       .order('number', { ascending: true }),
   ])
@@ -50,6 +55,7 @@ export default async function NewIssuePage({ params, searchParams }) {
           categories={categories ?? []}
           potentialParents={potentialParents ?? []}
           initialParentId={initialParentId}
+          initialStatus={initialStatus}
         />
       </main>
     </div>
