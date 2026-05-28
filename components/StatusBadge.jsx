@@ -3,6 +3,7 @@ const STATUS = {
   in_progress: { label: '진행 중',   color: 'bg-[#e8f4ff] text-[#0d74ce]' },
   review:      { label: '검토 대기', color: 'bg-[#f3ecfa] text-[#8145b5]' },
   done:        { label: '완료',      color: 'bg-[#dcfce7] text-[#16a34a]' },
+  cancelled:   { label: '취소',      color: 'bg-[#f0f0f3] text-[#aaaaaa]' },
 }
 
 const PRIORITY = {

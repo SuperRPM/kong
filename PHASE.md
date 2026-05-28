@@ -120,7 +120,7 @@
 - 부모 드롭다운: 기본 `<select>` (이슈 수 적으면 충분, 많아지면 향후 검색식으로 개선)
 - 자식 카테고리 독립이지만 표시 ID는 부모 카테고리 prefix 유지 (관계 시각화)
 
-## Phase 13 — 이슈 취소(cancelled) 상태 ⏳ 계획됨
+## Phase 13 — 이슈 취소(cancelled) 상태 ✅
 
 ### 결정 사항
 - DB: `issues.status` CHECK 제약에 `'cancelled'` 추가 (migration 020)
@@ -144,9 +144,59 @@
 - `ProjectStats.jsx`: total/완료율 계산 시 cancelled 제외
 - `IssueDetailClient.jsx`: 상태 드롭다운에 cancelled 옵션, 헤더 영역 시각 표현
 - `NewIssueForm.jsx`: 상태 드롭다운에 cancelled 옵션 (생성 시 거의 안 쓰겠지만 일관성)
+- `issues/new/page.jsx`: 부모 이슈 드롭다운에서 `done` 및 `cancelled` 상태 이슈 제외 (`.neq('status', 'done').neq('status', 'cancelled')`)
+
+- `KanbanBoard.jsx`: 각 컬럼 상단에 `+ 새 이슈` 버튼 추가 → `issues/new` 페이지로 이동 (해당 status 미리 선택)
+
+## Phase 14 — 권한 안내 & 프로젝트 아카이브 ⏳ 계획됨
+
+### 기능 1 — 권한 매트릭스 페이지
+
+| 기능 | 멤버 | 프로젝트 관리자 | 글로벌 관리자 |
+|------|:----:|:------:|:------:|
+| 이슈 생성/수정/삭제 | ✅ | ✅ | ✅ |
+| 댓글 작성 / 본인 댓글 삭제 | ✅ | ✅ | ✅ |
+| 프로젝트 멤버 추가/제거/역할 변경 | ❌ | ✅ | ✅ |
+| 카테고리 관리 | ❌ | ✅ | ✅ |
+| 프로젝트 정보 수정 | ❌ | ✅ | ✅ |
+| 프로젝트 삭제 | ❌ | ✅ | ✅ |
+| 업무 분배 | ❌ | ✅ | ✅ |
+| 이슈 요청자(created_by) 변경 | ❌ | ❌ | ✅ |
+| 삭제된 이슈/프로젝트 복구 (휴지통) | ❌ | ❌ | ✅ |
+| 전체 멤버 관리 | ❌ | ❌ | ✅ |
+| 관리자 권한 부여/해제 | ❌ | ❌ | ✅ |
+
+#### 작업 범위
+- `app/permissions/page.jsx`: 위 테이블을 렌더링하는 전용 페이지 (모든 로그인 사용자 접근 가능)
+- `components/Navbar.jsx`: 사용자 드롭다운(로그아웃 위)에 "권한 안내" 링크 추가
+- `assign/page.jsx`: 업무 분배 페이지 접근 시 `canManage` 검사 추가 (현재 권한 체크 누락 버그 수정)
+
+### 기능 2 — 프로젝트 완료(아카이브)
+
+#### 결정 사항
+- DB: `projects.completed_at TIMESTAMPTZ` 컬럼 추가 (migration 021)
+- 완료 권한: `canManage`(프로젝트 관리자 이상)만 가능
+- 완료 취소: 가능 (활성 상태로 복원)
+- 완료 후: 읽기전용 없음, 이슈 생성/수정 그대로 가능
+- 메인 프로젝트 목록(`/projects`): 완료 프로젝트 기본 숨김 + "완료된 프로젝트" 접기/펼치기 섹션
+- 완료 프로젝트 표시: 회색 "완료" 배지, 카드 opacity 낮춤
+
+#### 작업 범위
+- migration 021: `projects.completed_at TIMESTAMPTZ DEFAULT NULL`
+- `ProjectActions.jsx`: "프로젝트 완료" / "완료 취소" 버튼 (`canManage` 조건)
+- `app/projects/page.jsx`: 쿼리에 `completed_at IS NULL` 기본 필터 + 완료 프로젝트 별도 섹션
+- `components/NewProjectButton.jsx`(또는 별도 컴포넌트): 완료 프로젝트 섹션 UI
 
 ## 미분류 개선 사항 (우선순위 미정)
 - [ ] 다크모드 — 전체 컴포넌트 수정 필요, 별도 진행 예정
+
+## 논의 기록 (페이즈 미지정)
+
+### 성능 / 백엔드 분리 (2026-05-27)
+- 클릭 후 반응 느림의 원인: `router.refresh()` 호출이 매 액션마다 서버 전체 재렌더 + DB 전체 재조회를 유발
+- 근본 해결책: `router.refresh()` 제거 + Supabase 응답 데이터로 로컬 state 직접 업데이트 (KanbanBoard 드래그앤드롭이 이미 이 패턴)
+- 백엔드 분리(API Routes)는 이 문제의 해결책 아님 — 오히려 Vercel Serverless 콜드 스타트(0.5~2초) 추가 지연 발생 가능
+- **현행 유지 결정**: `router.refresh()` 제거 시 부작용 범위 불명확, 콜드 스타트는 감수 가능 수준. 실사용 규모가 커지는 시점에 재검토
 
 ---
 > 3차 작업 완료 (2026-05-26). Phase 12까지 완료 (하위이슈). 이후 실사용 피드백 수렴 후 진행.
@@ -178,3 +228,4 @@
 | v2.0.1 | 2026-05-22 | 버그픽스 — 인라인 댓글 textarea 글씨색/포커스 소실, 모바일 props 누락, 칸반 카테고리 view 유지, 버전 동기화 |
 | v2.1.0 | 2026-05-26 | Phase 12 — 하위이슈 (1단계 깊이, 부모별 sub_number 채번, cascade soft delete, 칸반 호버 미리보기, migration 019) |
 | v2.1.1 | 2026-05-26 | 업무 분배 페이지 자식 이슈 노출 + ID 포맷 처리 |
+| v2.2.0 | 2026-05-28 | Phase 13 — 이슈 취소 상태(cancelled), 칸반 컬럼 + 새 이슈 버튼, 부모 드롭다운 done/cancelled 제외 (migration 020) |

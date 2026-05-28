@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from 'react'
 import { useRouter, usePathname, useSearchParams } from 'next/navigation'
+import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { PriorityBadge, StatusBadge, STATUS_OPTIONS } from './StatusBadge'
 
@@ -40,8 +41,11 @@ export default function KanbanBoard({ projectId, projectPrefix, initialIssues, c
     router.replace(`${pathname}?${params.toString()}`)
   }
 
-  // 칸반에는 부모 이슈만 표시 (자식은 호버 미리보기로만 노출)
-  const parents = useMemo(() => issues.filter(i => !i.parent_issue_id), [issues])
+  // 칸반에는 부모 이슈만 표시 + 취소 이슈는 숨김 (자식은 호버 미리보기로만 노출)
+  const parents = useMemo(
+    () => issues.filter(i => !i.parent_issue_id && i.status !== 'cancelled'),
+    [issues],
+  )
   const childrenByParent = useMemo(() => {
     const map = {}
     issues.forEach(i => {
@@ -56,7 +60,7 @@ export default function KanbanBoard({ projectId, projectPrefix, initialIssues, c
 
   const filtered = categoryFilter === 'all' ? parents : parents.filter(i => i.category === categoryFilter)
 
-  const columns = STATUS_OPTIONS.map(opt => ({
+  const columns = STATUS_OPTIONS.filter(opt => opt.value !== 'cancelled').map(opt => ({
     ...opt,
     issues: filtered.filter(i => i.status === opt.value),
   }))
@@ -66,9 +70,11 @@ export default function KanbanBoard({ projectId, projectPrefix, initialIssues, c
     if (!issue || issue.status === newStatus) return
 
     const updates = { status: newStatus }
-    if (newStatus === 'done') {
+    const newClosed = newStatus === 'done' || newStatus === 'cancelled'
+    const oldClosed = issue.status === 'done' || issue.status === 'cancelled'
+    if (newClosed && !oldClosed) {
       updates.completed_at = new Date().toISOString().split('T')[0]
-    } else if (issue.status === 'done') {
+    } else if (oldClosed && !newClosed) {
       updates.completed_at = null
     }
 
@@ -132,16 +138,26 @@ export default function KanbanBoard({ projectId, projectPrefix, initialIssues, c
           } ${COL_TOP_BORDER[col.value]}`}
         >
           <div className="px-3 pt-3 pb-2 flex items-center justify-between">
-            <span className={`text-xs font-semibold uppercase tracking-wide ${COL_HEADER_COLOR[col.value]}`}>
-              {col.label}
-            </span>
-            <span className="text-xs text-[#999999] font-medium">{col.issues.length}</span>
+            <div className="flex items-center gap-2">
+              <span className={`text-xs font-semibold uppercase tracking-wide ${COL_HEADER_COLOR[col.value]}`}>
+                {col.label}
+              </span>
+              <span className="text-xs text-[#999999] font-medium">{col.issues.length}</span>
+            </div>
+            <Link
+              href={`/projects/${projectId}/issues/new?status=${col.value}`}
+              className="text-xs text-[#999999] hover:text-[#171717] font-medium px-1.5 -mr-1 rounded transition-colors"
+              title="이 상태로 새 이슈"
+            >
+              +
+            </Link>
           </div>
 
           <div className="px-3 pb-3 space-y-2 min-h-[80px]">
             {col.issues.map(issue => {
               const id = fmtId(projectPrefix, issue.category, issue.number)
-              const subs = childrenByParent[issue.id] ?? []
+              const allSubs = childrenByParent[issue.id] ?? []
+              const subs = allSubs.filter(s => s.status !== 'cancelled')
               const doneCount = subs.filter(s => s.status === 'done').length
               return (
                 <div
