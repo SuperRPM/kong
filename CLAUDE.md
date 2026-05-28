@@ -19,8 +19,12 @@
 - `config.matcher` export는 그대로 유지
 - 반드시 `node_modules/next/dist/docs/` 먼저 확인 후 코드 작성
 
-## 브랜치
-`claude/setup-project-management-UdsGI`
+## 브랜치 & 배포
+- 작업 브랜치: `claude/setup-project-management-UdsGI` — 모든 개발은 여기서
+- 배포 브랜치: `main` — Vercel이 main에 push 웹훅으로 감지하여 자동 배포
+- **머지 흐름**: 작업 브랜치 push → main 체크아웃 → `git merge --no-ff claude/setup-project-management-UdsGI -m "merge: <요약>"` → `git push origin main` → 작업 브랜치로 복귀
+- `--no-ff` 사용 이유: 그동안의 패턴이 머지 커밋이고, 어느 Phase에서 머지된 건지 히스토리 추적이 쉬움
+- 머지 후 작업 브랜치 삭제 ❌ — 다음 Phase 작업도 동일 브랜치에서 계속
 
 ## 권한 체계 (3단계)
 | 레벨 | 조건 | 가능한 작업 |
