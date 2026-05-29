@@ -13,6 +13,10 @@ export default function ProjectActions({ projectId, projectName, project, canMan
   // 삭제 확인
   const [confirm, setConfirm] = useState(false)
 
+  // 완료/아카이브
+  const [archiveLoading, setArchiveLoading] = useState(false)
+  const isCompleted = !!project?.completed_at
+
   // 프로젝트 수정
   const [editing, setEditing] = useState(false)
   const [editForm, setEditForm] = useState({
@@ -52,6 +56,16 @@ export default function ProjectActions({ projectId, projectName, project, canMan
     }).eq('id', projectId)
     setEditLoading(false)
     if (!error) { setEditing(false); router.refresh() }
+  }
+
+  async function handleToggleComplete() {
+    setArchiveLoading(true)
+    const supabase = createClient()
+    const { error } = await supabase.from('projects').update({
+      completed_at: isCompleted ? null : new Date().toISOString(),
+    }).eq('id', projectId)
+    setArchiveLoading(false)
+    if (!error) router.refresh()
   }
 
   async function handleDelete() {
@@ -142,6 +156,15 @@ export default function ProjectActions({ projectId, projectName, project, canMan
               수정
             </button>
           </>
+        )}
+        {canManage && (
+          <button
+            onClick={handleToggleComplete}
+            disabled={archiveLoading}
+            className="text-sm font-medium text-[#999999] hover:text-[#171717] transition-colors shrink-0 disabled:opacity-40"
+          >
+            {isCompleted ? '완료 취소' : '완료'}
+          </button>
         )}
         <button
           onClick={() => setConfirm(true)}
