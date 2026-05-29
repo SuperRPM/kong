@@ -25,6 +25,9 @@ export default function Navbar({ user }) {
       <Link href="/projects" className="hidden md:block text-sm font-medium text-[#60646c] hover:text-[#171717] transition-colors">
         프로젝트
       </Link>
+      <Link href="/permissions" className="hidden md:block text-sm font-medium text-[#60646c] hover:text-[#171717] transition-colors">
+        권한 안내
+      </Link>
       {user?.is_admin && (
         <>
           <Link href="/trash" className="hidden md:block text-sm font-medium text-[#60646c] hover:text-[#171717] transition-colors">

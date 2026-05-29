@@ -23,6 +23,11 @@ export default async function AssignPage({ params }) {
       .order('created_at', { ascending: false }),
   ])
 
+  const isAdmin = profile?.is_admin ?? false
+  const isProjectAdmin = (membersRaw ?? []).find(m => m.user_id === user.id)?.role === 'admin'
+  const canManage = isAdmin || isProjectAdmin
+  if (!canManage) redirect(`/projects/${projectId}`)
+
   const members = (membersRaw ?? []).map(m => ({ ...m.profile, role: m.role })).filter(m => m.id)
     .sort((a, b) => a.name.localeCompare(b.name))
 

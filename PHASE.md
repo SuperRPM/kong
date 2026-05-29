@@ -148,7 +148,7 @@
 
 - `KanbanBoard.jsx`: 각 컬럼 상단에 `+ 새 이슈` 버튼 추가 → `issues/new` 페이지로 이동 (해당 status 미리 선택)
 
-## Phase 14 — 권한 안내 & 프로젝트 아카이브 ⏳ 계획됨
+## Phase 14 — 권한 안내 & 프로젝트 아카이브 ✅
 
 ### 기능 1 — 권한 매트릭스 페이지
 
@@ -229,3 +229,4 @@
 | v2.1.0 | 2026-05-26 | Phase 12 — 하위이슈 (1단계 깊이, 부모별 sub_number 채번, cascade soft delete, 칸반 호버 미리보기, migration 019) |
 | v2.1.1 | 2026-05-26 | 업무 분배 페이지 자식 이슈 노출 + ID 포맷 처리 |
 | v2.2.0 | 2026-05-28 | Phase 13 — 이슈 취소 상태(cancelled), 칸반 컬럼 + 새 이슈 버튼, 부모 드롭다운 done/cancelled 제외 (migration 020) |
+| v2.3.0 | 2026-05-29 | Phase 14 — 권한 안내 페이지, 프로젝트 완료/아카이브, 업무 분배 canManage 체크 (migration 021) |

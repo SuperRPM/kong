@@ -89,6 +89,7 @@ notifications   (id UUID PK, recipient_id → profiles,
 | `supabase/migrations/018_notifications_delete_policy.sql` | 알림 개인삭제 + 클라이언트 INSERT 정책 |
 | `supabase/migrations/019_sub_issues.sql` | 하위이슈 — parent_issue_id/sub_number 컬럼, 깊이 제한/채번/cascade/부모 알림 트리거 |
 | `supabase/migrations/020_cancelled_status.sql` | 이슈 status CHECK에 `cancelled` 추가 + 알림 트리거 라벨 갱신 |
+| `supabase/migrations/021_project_archive.sql` | projects.completed_at TIMESTAMPTZ 컬럼 추가 (아카이브용) |
 
 > 모든 마이그레이션은 Supabase 대시보드 SQL Editor에서 수동 실행됨
 
@@ -106,6 +107,7 @@ notifications   (id UUID PK, recipient_id → profiles,
 | `app/admin/members/page.jsx` | 멤버 관리 (글로벌 관리자 전용) |
 | `app/projects/[id]/assign/page.jsx` | 업무 분배 (드래그앤드롭) |
 | `app/issues/[id]/page.jsx` | 이슈 ID → 프로젝트 상세 페이지 리다이렉트 |
+| `app/permissions/page.jsx` | 권한 안내 (역할별 기능 매트릭스, 모든 로그인 사용자 접근 가능) |
 
 ## 구현된 컴포넌트
 | 파일 | 설명 |
@@ -137,8 +139,10 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=sb_publishable_4mQDsXGvcksjlHhy7oHx2A_xjddZeFI
 ```
 > Supabase는 anon key를 "publishable key"로 명칭 변경했으나 env var명은 그대로 유지
 
+## 이슈 상태 (DB CHECK 기준)
+`todo` | `in_progress` | `review` | `done` | `cancelled`
+
 ## 향후 과제
-- [ ] 이슈 취소(cancelled) 상태 추가 — DB CHECK 제약 수정 + UI 전체 반영 필요
 - [ ] 다크모드 — 전체 컴포넌트 수정 필요
 
 ## 로컬 실행
