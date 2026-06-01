@@ -142,6 +142,13 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=sb_publishable_4mQDsXGvcksjlHhy7oHx2A_xjddZeFI
 ## 이슈 상태 (DB CHECK 기준)
 `todo` | `in_progress` | `review` | `done` | `cancelled`
 
+## 페이즈 완료 체크리스트
+새 페이즈를 마무리할 때 반드시 확인:
+- [ ] PHASE.md 해당 항목 ✅ 체크 + 버전 히스토리 행 추가
+- [ ] `lib/version.js` 버전 업데이트 (PHASE.md와 반드시 동시에)
+- [ ] 새 마이그레이션이 있으면 CLAUDE.md 마이그레이션 현황 테이블에 추가
+- [ ] 작업 브랜치 push → main 머지
+
 ## 향후 과제
 - [ ] 다크모드 — 전체 컴포넌트 수정 필요
 
