@@ -130,7 +130,7 @@ export default function KanbanBoard({ projectId, projectPrefix, initialIssues, c
           + 새 이슈
         </Link>
       </div>
-    <div className="flex gap-4 overflow-x-auto pb-4 -mx-1 px-1">
+    <div className="flex gap-4 overflow-x-auto pb-4">
       {columns.map(col => (
         <div
           key={col.value}
@@ -145,7 +145,7 @@ export default function KanbanBoard({ projectId, projectPrefix, initialIssues, c
             setDraggingId(null)
             if (id) handleDrop(id, col.value)
           }}
-          className={`flex-1 min-w-[200px] max-w-[280px] border-t-2 rounded-xl transition-colors ${
+          className={`flex-1 min-w-[200px] border-t-2 rounded-xl transition-colors ${
             overColumn === col.value ? 'bg-[#f0f0f3]' : 'bg-[#fafafa]'
           } ${COL_TOP_BORDER[col.value]}`}
         >
