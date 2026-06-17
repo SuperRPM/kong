@@ -4,8 +4,10 @@ import Link from 'next/link'
 import Navbar from '@/components/Navbar'
 import IssueDetailClient from '@/components/IssueDetailClient'
 
-export default async function IssuePage({ params }) {
+export default async function IssuePage({ params, searchParams }) {
   const { id: projectId, issueId } = await params
+  const sp = await searchParams
+  const returnHref = sp?.ref ?? `/projects/${projectId}`
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
@@ -59,7 +61,7 @@ export default async function IssuePage({ params }) {
     <div className="min-h-screen bg-white">
       <Navbar user={profile} />
       <main className="max-w-3xl mx-auto px-6 py-8">
-        <Link href={`/projects/${projectId}`} className="inline-flex items-center gap-1 text-sm text-[#0d74ce] hover:underline mb-6">
+        <Link href={returnHref} className="inline-flex items-center gap-1 text-sm text-[#0d74ce] hover:underline mb-6">
           ← {issue.project?.name}
         </Link>
         <IssueDetailClient
@@ -73,6 +75,7 @@ export default async function IssuePage({ params }) {
           activityLogs={activityLogs ?? []}
           initialAttachments={attachments ?? []}
           initialSubIssues={subIssues ?? []}
+          returnHref={returnHref}
         />
       </main>
     </div>

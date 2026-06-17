@@ -30,7 +30,7 @@ function SubIssuesSection({ projectId, parentId, projectPrefix, parentCategory, 
           하위이슈{initialSubIssues.length > 0 ? ` (${initialSubIssues.length})` : ''}
         </h2>
         <Link
-          href={`/projects/${projectId}/issues/new?parent=${parentId}`}
+          href={`/projects/${projectId}/issues/new?parent=${parentId}&ref=${encodeURIComponent(`/projects/${projectId}/issues/${parentId}`)}`}
           className="text-xs font-medium text-[#0d74ce] hover:text-[#0b63b0] transition-colors"
         >
           + 하위이슈
@@ -371,8 +371,9 @@ function ActivityLog({ logs }) {
   )
 }
 
-export default function IssueDetailClient({ issue, members, projectId, initialComments, currentUserId, isAdmin, categories = [], activityLogs, initialAttachments, initialSubIssues = [] }) {
+export default function IssueDetailClient({ issue, members, projectId, initialComments, currentUserId, isAdmin, categories = [], activityLogs, initialAttachments, initialSubIssues = [], returnHref }) {
   const router = useRouter()
+  const backHref = returnHref ?? `/projects/${projectId}`
   const [editing, setEditing] = useState(false)
   const [deleteConfirm, setDeleteConfirm] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -426,7 +427,7 @@ export default function IssueDetailClient({ issue, members, projectId, initialCo
     const { error } = await supabase.from('issues').update({ deleted_at: new Date().toISOString() }).eq('id', issue.id)
     setLoadingDelete(false)
     if (error) { setDeleteError(error.message); return }
-    router.push(`/projects/${projectId}`)
+    router.push(backHref)
   }
 
   const isChild = !!issue.parent_issue_id

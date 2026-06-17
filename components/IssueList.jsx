@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useMemo, useRef } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, usePathname, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { StatusBadge, PriorityBadge, STATUS_OPTIONS } from './StatusBadge'
@@ -31,7 +31,7 @@ function fmtDate(iso) {
 const STATUS_ORDER = { todo: 0, in_progress: 1, review: 2, done: 3, cancelled: 4 }
 const PRIORITY_ORDER = { high: 0, medium: 1, low: 2 }
 
-function InlinePanel({ issue, projectId, projectPrefix, subIssues, commentsLoading, commentsCache, commentText, setCommentText, commentSubmitting, onSubmit, currentUserId }) {
+function InlinePanel({ issue, projectId, projectPrefix, subIssues, commentsLoading, commentsCache, commentText, setCommentText, commentSubmitting, onSubmit, currentUserId, listRef }) {
   const isLoading = commentsLoading.has(issue.id)
   const comments = commentsCache[issue.id] ?? []
   return (
@@ -53,7 +53,7 @@ function InlinePanel({ issue, projectId, projectPrefix, subIssues, commentsLoadi
               하위이슈{subIssues.length > 0 ? ` (${subIssues.length})` : ''}
             </p>
             <Link
-              href={`/projects/${projectId}/issues/new?parent=${issue.id}`}
+              href={`/projects/${projectId}/issues/new?parent=${issue.id}${listRef ? '&ref=' + listRef : ''}`}
               className="text-[11px] font-medium text-[#0d74ce] hover:underline"
             >
               + 하위이슈
@@ -138,6 +138,9 @@ function InlinePanel({ issue, projectId, projectPrefix, subIssues, commentsLoadi
 
 export default function IssueList({ projectId, projectPrefix, initialIssues, members, currentUserId, searchInputRef: externalSearchRef }) {
   const router = useRouter()
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
+  const listRef = encodeURIComponent(pathname + (searchParams.toString() ? '?' + searchParams.toString() : ''))
   const internalSearchRef = useRef(null)
   const searchInputRef = externalSearchRef ?? internalSearchRef
 
@@ -435,7 +438,7 @@ export default function IssueList({ projectId, projectPrefix, initialIssues, mem
             CSV {'내보내기'}
           </button>
           <Link
-            href={`/projects/${projectId}/issues/new`}
+            href={`/projects/${projectId}/issues/new?ref=${listRef}`}
             className="bg-[#000000] hover:bg-[#1a1a1a] text-white text-sm font-medium px-[18px] py-[10px] rounded-lg transition-colors"
           >
             + {'새 이슈'}
@@ -541,7 +544,7 @@ export default function IssueList({ projectId, projectPrefix, initialIssues, mem
                     </div>
                     <div className="w-16 shrink-0" onClick={e => e.stopPropagation()}>
                       <Link
-                        href={`/projects/${projectId}/issues/${issue.id}`}
+                        href={`/projects/${projectId}/issues/${issue.id}?ref=${listRef}`}
                         className="text-xs text-[#0d74ce] hover:underline font-medium whitespace-nowrap"
                       >
                         상세보기
@@ -566,7 +569,7 @@ export default function IssueList({ projectId, projectPrefix, initialIssues, mem
                       {STATUS_OPTIONS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
                     </select>
                   </div>
-                  {expandedId === issue.id && <InlinePanel issue={issue} projectId={projectId} projectPrefix={projectPrefix} subIssues={childrenByParent[issue.id] ?? []} commentsLoading={commentsLoading} commentsCache={commentsCache} commentText={commentText} setCommentText={setCommentText} commentSubmitting={commentSubmitting} onSubmit={handleCommentSubmit} currentUserId={currentUserId} />}
+                  {expandedId === issue.id && <InlinePanel issue={issue} projectId={projectId} projectPrefix={projectPrefix} subIssues={childrenByParent[issue.id] ?? []} commentsLoading={commentsLoading} commentsCache={commentsCache} commentText={commentText} setCommentText={setCommentText} commentSubmitting={commentSubmitting} onSubmit={handleCommentSubmit} currentUserId={currentUserId} listRef={listRef} />}
                 </div>
               ))}
             </div>
@@ -609,14 +612,14 @@ export default function IssueList({ projectId, projectPrefix, initialIssues, mem
                           {STATUS_OPTIONS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
                         </select>
                         <Link
-                          href={`/projects/${projectId}/issues/${issue.id}`}
+                          href={`/projects/${projectId}/issues/${issue.id}?ref=${listRef}`}
                           className="text-xs text-[#0d74ce] hover:underline font-medium"
                         >
                           상세보기
                         </Link>
                       </div>
                     </div>
-                    {isExpanded && <InlinePanel issue={issue} projectId={projectId} projectPrefix={projectPrefix} subIssues={childrenByParent[issue.id] ?? []} commentsLoading={commentsLoading} commentsCache={commentsCache} commentText={commentText} setCommentText={setCommentText} commentSubmitting={commentSubmitting} onSubmit={handleCommentSubmit} currentUserId={currentUserId} />}
+                    {isExpanded && <InlinePanel issue={issue} projectId={projectId} projectPrefix={projectPrefix} subIssues={childrenByParent[issue.id] ?? []} commentsLoading={commentsLoading} commentsCache={commentsCache} commentText={commentText} setCommentText={setCommentText} commentSubmitting={commentSubmitting} onSubmit={handleCommentSubmit} currentUserId={currentUserId} listRef={listRef} />}
                   </div>
                 )
               })}
