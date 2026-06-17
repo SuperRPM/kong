@@ -95,9 +95,9 @@ export default function KanbanBoard({ projectId, projectPrefix, initialIssues, c
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-4">
-        {categories.length > 0 ? (
-          <div className="flex flex-wrap gap-1.5">
+      <div className="flex flex-wrap items-center gap-1.5 mb-4">
+        {categories.length > 0 && (
+          <>
             <button
               onClick={() => updateCategoryFilter('all')}
               className={`text-xs font-medium px-3 py-1.5 rounded-lg border transition-colors ${
@@ -121,11 +121,11 @@ export default function KanbanBoard({ projectId, projectPrefix, initialIssues, c
                 {cat.value}
               </button>
             ))}
-          </div>
-        ) : <div />}
+          </>
+        )}
         <Link
           href={`/projects/${projectId}/issues/new?ref=${kanbanRef}`}
-          className="bg-[#000000] hover:bg-[#1a1a1a] text-white text-sm font-medium px-[18px] py-[10px] rounded-lg transition-colors shrink-0"
+          className="ml-auto bg-[#000000] hover:bg-[#1a1a1a] text-white text-sm font-medium px-[18px] py-[10px] rounded-lg transition-colors shrink-0"
         >
           + 새 이슈
         </Link>
