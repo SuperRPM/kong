@@ -150,10 +150,9 @@ export default function KanbanBoard({ projectId, projectPrefix, initialIssues, c
             </div>
             <Link
               href={`/projects/${projectId}/issues/new?status=${col.value}&ref=${kanbanRef}`}
-              className="text-xs text-[#999999] hover:text-[#171717] font-medium px-1.5 -mr-1 rounded transition-colors"
-              title="이 상태로 새 이슈"
+              className="text-xs font-medium text-[#60646c] hover:text-[#171717] border border-[#dcdee0] hover:border-[#171717] px-2.5 py-1 rounded-lg transition-colors"
             >
-              +
+              + 새 이슈
             </Link>
           </div>
 
