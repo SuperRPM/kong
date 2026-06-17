@@ -11,6 +11,7 @@ export default async function NewIssuePage({ params, searchParams }) {
   const sp = await searchParams
   const initialParentId = sp?.parent ?? null
   const initialStatus = VALID_STATUSES.has(sp?.status) ? sp.status : 'todo'
+  const returnHref = sp?.ref ?? `/projects/${projectId}`
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
@@ -42,7 +43,7 @@ export default async function NewIssuePage({ params, searchParams }) {
       <Navbar user={profile} />
       <main className="max-w-2xl mx-auto px-6 py-8">
         <Link
-          href={`/projects/${projectId}`}
+          href={returnHref}
           className="inline-flex items-center gap-1 text-sm text-[#0d74ce] hover:underline mb-6"
         >
           ← {project.name}
@@ -56,6 +57,7 @@ export default async function NewIssuePage({ params, searchParams }) {
           potentialParents={potentialParents ?? []}
           initialParentId={initialParentId}
           initialStatus={initialStatus}
+          returnHref={returnHref}
         />
       </main>
     </div>

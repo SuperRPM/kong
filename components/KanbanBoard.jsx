@@ -60,6 +60,10 @@ export default function KanbanBoard({ projectId, projectPrefix, initialIssues, c
 
   const filtered = categoryFilter === 'all' ? parents : parents.filter(i => i.category === categoryFilter)
 
+  const kanbanRef = encodeURIComponent(
+    `/projects/${projectId}?view=kanban${categoryFilter !== 'all' ? '&kcat=' + categoryFilter : ''}`
+  )
+
   const columns = STATUS_OPTIONS.filter(opt => opt.value !== 'cancelled').map(opt => ({
     ...opt,
     issues: filtered.filter(i => i.status === opt.value),
@@ -145,7 +149,7 @@ export default function KanbanBoard({ projectId, projectPrefix, initialIssues, c
               <span className="text-xs text-[#999999] font-medium">{col.issues.length}</span>
             </div>
             <Link
-              href={`/projects/${projectId}/issues/new?status=${col.value}`}
+              href={`/projects/${projectId}/issues/new?status=${col.value}&ref=${kanbanRef}`}
               className="text-xs text-[#999999] hover:text-[#171717] font-medium px-1.5 -mr-1 rounded transition-colors"
               title="이 상태로 새 이슈"
             >
@@ -168,7 +172,7 @@ export default function KanbanBoard({ projectId, projectPrefix, initialIssues, c
                     e.dataTransfer.effectAllowed = 'move'
                   }}
                   onDragEnd={() => { setDraggingId(null); setOverColumn(null) }}
-                  onClick={() => router.push(`/projects/${projectId}/issues/${issue.id}`)}
+                  onClick={() => router.push(`/projects/${projectId}/issues/${issue.id}?ref=${kanbanRef}`)}
                   className={`group relative bg-white border border-[#dcdee0] rounded-lg p-3 cursor-grab active:cursor-grabbing shadow-sm hover:shadow-md transition-all select-none ${
                     draggingId === issue.id ? 'opacity-40 scale-95' : ''
                   }`}

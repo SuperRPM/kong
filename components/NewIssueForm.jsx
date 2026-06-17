@@ -9,8 +9,9 @@ const inputCls = 'w-full bg-white border border-[#dcdee0] rounded-lg px-4 py-2.5
 const selectCls = 'w-full bg-white border border-[#dcdee0] rounded-lg px-4 py-2.5 text-sm text-[#171717] focus:outline-none focus:ring-2 focus:ring-[#171717]'
 const labelCls = 'block text-sm font-medium text-[#171717] mb-1'
 
-export default function NewIssueForm({ projectId, projectPrefix, members, categories = [], potentialParents = [], initialParentId = null, initialStatus = 'todo' }) {
+export default function NewIssueForm({ projectId, projectPrefix, members, categories = [], potentialParents = [], initialParentId = null, initialStatus = 'todo', returnHref }) {
   const router = useRouter()
+  const backHref = returnHref ?? `/projects/${projectId}`
   const [loading, setLoading] = useState(false)
   const [form, setForm] = useState({
     title: '', description: '', status: initialStatus, priority: 'medium',
@@ -51,8 +52,8 @@ export default function NewIssueForm({ projectId, projectPrefix, members, catego
       .single()
     setLoading(false)
     if (!error && data) {
+      router.push(backHref)
       router.refresh()
-      router.push(`/projects/${projectId}`)
     }
   }
 
@@ -144,7 +145,7 @@ export default function NewIssueForm({ projectId, projectPrefix, members, catego
       <div className="flex justify-end gap-2 pt-2">
         <button
           type="button"
-          onClick={() => router.back()}
+          onClick={() => router.push(backHref)}
           className="text-sm font-medium text-[#60646c] hover:text-[#171717] px-4 py-2 transition-colors"
         >
           취소
