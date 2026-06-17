@@ -95,33 +95,41 @@ export default function KanbanBoard({ projectId, projectPrefix, initialIssues, c
 
   return (
     <div>
-      {categories.length > 0 && (
-        <div className="flex flex-wrap gap-1.5 mb-4">
-          <button
-            onClick={() => updateCategoryFilter('all')}
-            className={`text-xs font-medium px-3 py-1.5 rounded-lg border transition-colors ${
-              categoryFilter === 'all'
-                ? 'bg-[#171717] text-white border-[#171717]'
-                : 'bg-white text-[#60646c] border-[#dcdee0] hover:border-[#171717]'
-            }`}
-          >
-            전체
-          </button>
-          {categories.map(cat => (
+      <div className="flex items-center justify-between mb-4">
+        {categories.length > 0 ? (
+          <div className="flex flex-wrap gap-1.5">
             <button
-              key={cat.value}
-              onClick={() => updateCategoryFilter(cat.value)}
+              onClick={() => updateCategoryFilter('all')}
               className={`text-xs font-medium px-3 py-1.5 rounded-lg border transition-colors ${
-                categoryFilter === cat.value
+                categoryFilter === 'all'
                   ? 'bg-[#171717] text-white border-[#171717]'
                   : 'bg-white text-[#60646c] border-[#dcdee0] hover:border-[#171717]'
               }`}
             >
-              {cat.value}
+              전체
             </button>
-          ))}
-        </div>
-      )}
+            {categories.map(cat => (
+              <button
+                key={cat.value}
+                onClick={() => updateCategoryFilter(cat.value)}
+                className={`text-xs font-medium px-3 py-1.5 rounded-lg border transition-colors ${
+                  categoryFilter === cat.value
+                    ? 'bg-[#171717] text-white border-[#171717]'
+                    : 'bg-white text-[#60646c] border-[#dcdee0] hover:border-[#171717]'
+                }`}
+              >
+                {cat.value}
+              </button>
+            ))}
+          </div>
+        ) : <div />}
+        <Link
+          href={`/projects/${projectId}/issues/new?ref=${kanbanRef}`}
+          className="bg-[#000000] hover:bg-[#1a1a1a] text-white text-sm font-medium px-[18px] py-[10px] rounded-lg transition-colors shrink-0"
+        >
+          + 새 이슈
+        </Link>
+      </div>
     <div className="flex gap-4 overflow-x-auto pb-4 -mx-1 px-1">
       {columns.map(col => (
         <div
@@ -141,19 +149,11 @@ export default function KanbanBoard({ projectId, projectPrefix, initialIssues, c
             overColumn === col.value ? 'bg-[#f0f0f3]' : 'bg-[#fafafa]'
           } ${COL_TOP_BORDER[col.value]}`}
         >
-          <div className="px-3 pt-3 pb-2 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <span className={`text-xs font-semibold uppercase tracking-wide ${COL_HEADER_COLOR[col.value]}`}>
-                {col.label}
-              </span>
-              <span className="text-xs text-[#999999] font-medium">{col.issues.length}</span>
-            </div>
-            <Link
-              href={`/projects/${projectId}/issues/new?status=${col.value}&ref=${kanbanRef}`}
-              className="text-xs font-medium text-[#60646c] hover:text-[#171717] border border-[#dcdee0] hover:border-[#171717] px-2.5 py-1 rounded-lg transition-colors"
-            >
-              + 새 이슈
-            </Link>
+          <div className="px-3 pt-3 pb-2 flex items-center gap-2">
+            <span className={`text-xs font-semibold uppercase tracking-wide ${COL_HEADER_COLOR[col.value]}`}>
+              {col.label}
+            </span>
+            <span className="text-xs text-[#999999] font-medium">{col.issues.length}</span>
           </div>
 
           <div className="px-3 pb-3 space-y-2 min-h-[80px]">
