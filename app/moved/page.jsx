@@ -21,7 +21,7 @@ export default function MovedPage() {
       <div className="max-w-sm w-full text-center">
         <h1 className="text-xl font-semibold text-[#171717] mb-2">서비스가 이전되었습니다</h1>
         <p className="text-sm text-[#60646c] mb-6 leading-relaxed">
-          보안 강화를 위해 Kong이 사내망 주소로 이전되었습니다.
+          Kong이 사내망 주소로 이전되었습니다.
           <br />
           {seconds}초 후 자동으로 이동합니다.
         </p>
@@ -32,7 +32,7 @@ export default function MovedPage() {
           지금 이동
         </a>
         <p className="text-xs text-[#999999] mt-4">
-          사내망(VPN 포함) 연결 상태에서만 접속 가능합니다.
+          사내망에서만 접속 가능합니다.
         </p>
       </div>
     </div>
