@@ -26,10 +26,20 @@ export default function LoginPage() {
     }
 
     const supabase = createClient()
-    const { error: authError } = await supabase.auth.signInWithPassword({ email, password })
 
-    if (authError) {
-      setError('이메일 또는 비밀번호가 올바르지 않습니다.')
+    try {
+      const { error: authError } = await supabase.auth.signInWithPassword({ email, password })
+
+      if (authError) {
+        // status가 없으면 서버 응답 자체를 못 받은 것(네트워크/주소 문제) — 자격증명 오류와 구분
+        setError(authError.status
+          ? '이메일 또는 비밀번호가 올바르지 않습니다.'
+          : '서버에 연결할 수 없습니다. 네트워크 연결 상태를 확인해주세요.')
+        setLoading(false)
+        return
+      }
+    } catch {
+      setError('서버에 연결할 수 없습니다. 네트워크 연결 상태를 확인해주세요.')
       setLoading(false)
       return
     }

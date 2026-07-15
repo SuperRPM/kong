@@ -23,6 +23,9 @@
 - **`SECURITY DEFINER` 함수 + `auth.uid()` = NULL 가능**
   트리거 안에서 `auth.uid()`를 읽으면 NULL이 될 수 있음. `NEW.assignee_id != actor` 같은 비교가 NULL 전파로 false가 되어 알림이 안 갈 수 있음. `(actor IS NULL OR NEW.assignee_id != actor)`로 NULL 분기 추가.
 
+- **`NEXT_PUBLIC_SUPABASE_URL`을 호스트명으로 바꾸면 브라우저·컨테이너 양쪽 다 그 이름을 풀 수 있어야 함**
+  이 값은 브라우저가 로그인 시 직접 호출하는 주소이자 빌드 타임에 클라이언트 번들에 박제(baked)됨. self-hosted 배포에서 이 값을 `kong.mww` 같은 사내 전용 hosts 이름으로 바꿨더니, hosts 미등록 PC는 로그인 시 `ERR_NAME_NOT_RESOLVED`, 컨테이너 내부(서버사이드 `getUser`)도 그 이름을 못 풀어 `/login`으로 리다이렉트 루프 발생. 근본 해결은 IP(`http://192.168.20.87:8000`)로 되돌려 hosts 의존 자체를 제거하는 것. 상세: [CLAUDE.md](CLAUDE.md) 셀프호스팅 배포 섹션.
+
 ## 운영
 
 - **버전 파일(`lib/version.js`) 업데이트는 PHASE.md 버전 히스토리 작성과 함께**
